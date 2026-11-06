@@ -1,0 +1,3542 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>个人碳足迹计算器 · 算出你一年的碳排放</title>
+<meta name="description" content="用排放因子法算出你一年的碳足迹，和全国人均、全球人均、巴黎协定目标比一比，并给出可执行的减排建议。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%B1%3C/text%3E%3C/svg%3E">
+<style>
+/* =========================================================
+   个人碳足迹计算器 · 样式表
+   主题：绿色 / 低碳 / 卡片化，移动端优先
+   ========================================================= */
+
+:root {
+  --green-50: #ecfdf5;
+  --green-100: #d1fae5;
+  --green-200: #a7f3d0;
+  --green-400: #34d399;
+  --green-500: #10b981;
+  --green-600: #059669;
+  --green-700: #047857;
+  --green-900: #064e3b;
+
+  --ink: #0f172a;
+  --ink-2: #334155;
+  --muted: #64748b;
+  --line: #e2e8f0;
+  --bg: #f6faf8;
+  --card: #ffffff;
+
+  --radius: 18px;
+  --radius-sm: 12px;
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, .06);
+  --shadow: 0 14px 34px -18px rgba(6, 78, 59, .35);
+  --shadow-lg: 0 28px 60px -24px rgba(6, 78, 59, .45);
+
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+          "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  color: var(--ink);
+  background: var(--bg);
+  background-image:
+    radial-gradient(900px 520px at 8% -8%, rgba(16, 185, 129, .16), transparent 60%),
+    radial-gradient(760px 460px at 96% 2%, rgba(56, 189, 248, .13), transparent 62%),
+    radial-gradient(720px 520px at 50% 108%, rgba(167, 243, 208, .30), transparent 60%);
+  background-attachment: fixed;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 { margin: 0; line-height: 1.25; letter-spacing: -.01em; }
+p { margin: 0; }
+button { font-family: inherit; }
+a { color: var(--green-700); }
+
+.num { font-variant-numeric: tabular-nums; }
+
+/* ------------------------------ 顶栏 ------------------------------ */
+.app { max-width: 1140px; margin: 0 auto; padding: 0 20px 60px; }
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 4px;
+  margin-bottom: 8px;
+  background: rgba(246, 250, 248, .82);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(226, 232, 240, .8);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  background: none;
+  padding: 4px;
+  cursor: pointer;
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  background: linear-gradient(145deg, var(--green-500), var(--green-700));
+  font-size: 18px;
+  box-shadow: 0 6px 14px -6px rgba(5, 150, 105, .8);
+}
+
+.topnav { display: flex; gap: 6px; }
+
+.nav-btn {
+  border: 1px solid transparent;
+  background: none;
+  color: var(--ink-2);
+  font-size: .92rem;
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background .18s, color .18s, border-color .18s;
+}
+
+.nav-btn:hover { background: rgba(16, 185, 129, .10); color: var(--green-700); }
+
+.nav-btn.is-active {
+  background: var(--green-600);
+  color: #fff;
+  box-shadow: 0 8px 18px -10px rgba(5, 150, 105, .9);
+}
+
+/* ------------------------------ 视图 ------------------------------ */
+.view { display: none; }
+.view.is-active { display: block; animation: rise .34s ease both; }
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ------------------------------ 首页 ------------------------------ */
+.hero { text-align: center; padding: 46px 8px 24px; }
+
+.pill {
+  display: inline-block;
+  padding: 7px 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .8);
+  border: 1px solid var(--green-200);
+  color: var(--green-700);
+  font-size: .84rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.pill b { color: var(--green-700); }
+
+.hero h1 {
+  margin: 22px 0 14px;
+  font-size: clamp(2.1rem, 6.4vw, 3.6rem);
+  font-weight: 800;
+  letter-spacing: -.03em;
+  background: linear-gradient(120deg, #064e3b 6%, #0f766e 46%, #0ea5e9 96%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.hero-sub {
+  max-width: 620px;
+  margin: 0 auto;
+  color: var(--muted);
+  font-size: clamp(.98rem, 2.4vw, 1.12rem);
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin: 30px 0 34px;
+}
+
+.hero-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.stat {
+  background: rgba(255, 255, 255, .82);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px 12px;
+  box-shadow: var(--shadow-sm);
+}
+
+.stat-num {
+  display: block;
+  font-size: clamp(1.4rem, 3.6vw, 1.9rem);
+  font-weight: 800;
+  color: var(--green-700);
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-num small { font-size: .55em; font-weight: 700; color: var(--muted); }
+.stat-num.accent { color: #0284c7; }
+.stat-label { display: block; margin-top: 4px; font-size: .78rem; color: var(--muted); }
+
+.steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 44px 0 10px;
+}
+
+.step-card {
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 22px 20px 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.step-index {
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .14em;
+  color: var(--green-500);
+}
+
+.step-card h3 { margin: 8px 0 8px; font-size: 1.05rem; }
+.step-card p { font-size: .88rem; color: var(--muted); }
+
+/* 方法说明 */
+.method { margin-top: 56px; }
+
+.section-head { text-align: center; margin-bottom: 22px; }
+.section-head h2 { font-size: clamp(1.35rem, 3.4vw, 1.8rem); }
+.section-head p { color: var(--muted); font-size: .92rem; margin-top: 8px; }
+
+.formula {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 24px;
+  align-items: center;
+  justify-content: center;
+  padding: 18px 20px;
+  margin: 0 0 20px;
+  border-radius: var(--radius);
+  background: linear-gradient(120deg, var(--green-900), #0f766e);
+  color: #e6fffa;
+  box-shadow: var(--shadow);
+}
+
+.formula-main { font-size: clamp(.95rem, 2.4vw, 1.12rem); font-weight: 700; letter-spacing: .01em; }
+.formula-main sub { font-size: .7em; opacity: .8; }
+.formula-note { font-size: .82rem; opacity: .82; }
+
+.table-wrap { overflow-x: auto; border-radius: var(--radius); }
+
+.factor-table,
+.detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  font-size: .87rem;
+  min-width: 560px;
+}
+
+.factor-table caption {
+  caption-side: top;
+  text-align: left;
+  padding: 14px 16px;
+  font-weight: 700;
+  color: var(--ink-2);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-bottom: 0;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.factor-table th,
+.factor-table td,
+.detail-table th,
+.detail-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.factor-table thead th,
+.detail-table thead th {
+  background: var(--green-50);
+  color: var(--green-900);
+  font-size: .8rem;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+
+.factor-table tbody th {
+  background: #fbfdfc;
+  color: var(--ink-2);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.factor-table td.num,
+.detail-table td.num,
+.detail-table th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.factor-table tbody tr:last-child td,
+.factor-table tbody tr:last-child th,
+.detail-table tbody tr:last-child td { border-bottom: 0; }
+
+.bench-note {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.bench-item {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  font-size: .86rem;
+  color: var(--muted);
+}
+
+.bench-item b { display: block; font-size: 1.2rem; color: var(--green-700); margin-bottom: 2px; }
+
+.disclaimer {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border-left: 3px solid var(--green-400);
+  background: rgba(255, 255, 255, .7);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: .82rem;
+  color: var(--muted);
+}
+
+/* ------------------------------ 按钮 ------------------------------ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 11px 22px;
+  font-size: .94rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform .16s, box-shadow .2s, background .2s, color .2s;
+  white-space: nowrap;
+}
+
+.btn:active { transform: translateY(1px); }
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--green-500), var(--green-700));
+  color: #fff;
+  box-shadow: 0 14px 26px -14px rgba(5, 150, 105, .95);
+}
+
+.btn-primary:hover { box-shadow: 0 18px 30px -14px rgba(5, 150, 105, 1); }
+
+.btn-ghost {
+  background: rgba(255, 255, 255, .8);
+  border-color: var(--line);
+  color: var(--ink-2);
+}
+
+.btn-ghost:hover { border-color: var(--green-400); color: var(--green-700); }
+
+.btn-light {
+  background: var(--green-50);
+  border-color: var(--green-200);
+  color: var(--green-700);
+}
+
+.btn-light:hover { background: var(--green-100); }
+
+.btn-lg { padding: 14px 30px; font-size: 1rem; }
+.btn-sm { padding: 8px 16px; font-size: .85rem; }
+
+/* ------------------------------ 输入页 ------------------------------ */
+.form-head { text-align: center; padding: 26px 8px 22px; }
+.form-head h2 { font-size: clamp(1.4rem, 3.6vw, 1.9rem); }
+.form-head p { color: var(--muted); margin-top: 8px; font-size: .92rem; }
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.cat-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  align-self: start;
+}
+
+.cat-head { display: flex; align-items: center; gap: 12px; }
+
+.cat-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: var(--green-50);
+  border: 1px solid var(--green-100);
+  font-size: 20px;
+  flex: none;
+}
+
+.cat-head h3 { font-size: 1.06rem; }
+.cat-head p { font-size: .8rem; color: var(--muted); }
+
+.q { display: flex; flex-direction: column; gap: 8px; }
+
+.q-label { font-size: .88rem; font-weight: 600; color: var(--ink-2); }
+
+.hint { font-size: .76rem; color: #94a3b8; }
+
+.choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.choices-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+.choice { position: relative; cursor: pointer; }
+
+.choice input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  margin: 0;
+}
+
+.choice span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 10px 6px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #fcfdfd;
+  font-size: 1.05rem;
+  line-height: 1.2;
+  text-align: center;
+  transition: border-color .16s, background .16s, box-shadow .16s, transform .16s;
+}
+
+.choice span i {
+  font-style: normal;
+  font-size: .74rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.choice:hover span { border-color: var(--green-400); }
+
+.choice input:checked + span {
+  border-color: var(--green-600);
+  background: var(--green-50);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, .14);
+}
+
+.choice input:checked + span i { color: var(--green-700); font-weight: 700; }
+
+.choice input:focus-visible + span { outline: 2px solid var(--green-500); outline-offset: 2px; }
+
+/* 滑块 + 数字 */
+.slider-field {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #fbfdfc;
+}
+
+.js-range {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 1;
+  height: 22px;
+  background: transparent;
+  cursor: pointer;
+  min-width: 60px;
+}
+
+.js-range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--green-400), var(--green-200));
+}
+
+.js-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  margin-top: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--green-600);
+  box-shadow: 0 2px 8px rgba(6, 78, 59, .3);
+}
+
+.js-range::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--green-400), var(--green-200));
+}
+
+.js-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--green-600);
+  box-shadow: 0 2px 8px rgba(6, 78, 59, .3);
+}
+
+.num-wrap { display: flex; align-items: center; gap: 6px; flex: none; }
+
+.js-num {
+  width: 84px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  font-size: .94rem;
+  font-variant-numeric: tabular-nums;
+  font-family: inherit;
+  text-align: right;
+  background: #fff;
+  color: var(--ink);
+}
+
+.js-num:focus { outline: none; border-color: var(--green-500); box-shadow: 0 0 0 3px rgba(16, 185, 129, .14); }
+
+.unit { font-size: .76rem; color: var(--muted); white-space: nowrap; }
+
+/* 分段控件 */
+.segmented {
+  display: inline-flex;
+  padding: 4px;
+  gap: 4px;
+  background: #f1f5f4;
+  border-radius: 999px;
+  align-self: flex-start;
+}
+
+.seg {
+  border: 0;
+  background: none;
+  padding: 7px 16px;
+  border-radius: 999px;
+  font-size: .84rem;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background .18s, color .18s, box-shadow .18s;
+}
+
+.seg.is-active {
+  background: #fff;
+  color: var(--green-700);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, .1);
+}
+
+.estimate-box {
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--green-50);
+  border: 1px dashed var(--green-200);
+  color: var(--green-900);
+  font-size: .88rem;
+  font-weight: 600;
+}
+
+.is-hidden { display: none !important; }
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 26px;
+  padding: 18px 20px;
+  background: rgba(255, 255, 255, .84);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.form-note { margin-left: auto; font-size: .78rem; color: #94a3b8; }
+
+/* ------------------------------ 卡片 ------------------------------ */
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 22px;
+  margin-bottom: 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+.card-title { font-size: 1.06rem; margin-bottom: 4px; }
+.card-sub { font-size: .84rem; color: var(--muted); margin-bottom: 16px; }
+
+.card.mini { padding: 16px; margin: 16px 0 0; }
+.card.mini h4 { font-size: .86rem; color: var(--ink-2); margin-bottom: 10px; }
+
+/* ------------------------------ 结果页 ------------------------------ */
+.result-hero { padding: 26px; box-shadow: var(--shadow); }
+
+.result-hero-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  flex-wrap: wrap;
+}
+
+.eyebrow {
+  font-size: .8rem;
+  font-weight: 700;
+  letter-spacing: .16em;
+  color: var(--green-600);
+  text-transform: uppercase;
+}
+
+.big-number {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 6px 0 4px;
+  font-size: clamp(2.8rem, 9vw, 4.6rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -.04em;
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(120deg, #064e3b, #0f766e 60%, #0ea5e9);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.big-number .unit {
+  font-size: clamp(.9rem, 2.4vw, 1.15rem);
+  font-weight: 700;
+  color: var(--muted);
+  -webkit-text-fill-color: var(--muted);
+  letter-spacing: 0;
+}
+
+.big-sub { font-size: .88rem; color: var(--muted); }
+.big-sub b { color: var(--ink-2); }
+
+.grade-box { text-align: center; flex: none; }
+
+.grade-badge {
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  margin: 0 auto 8px;
+  border-radius: 26px;
+  font-size: 2.1rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -.02em;
+  background: var(--g, var(--green-600));
+  box-shadow: 0 16px 32px -16px var(--g, var(--green-600));
+}
+
+.grade-title { font-size: .82rem; font-weight: 700; color: var(--ink-2); }
+
+.verdict {
+  margin: 18px 0 0;
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--green-50);
+  border: 1px solid var(--green-100);
+  font-size: .92rem;
+  color: var(--green-900);
+}
+
+.verdict b { color: var(--green-700); }
+
+.equiv { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+
+.equiv span {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: var(--ink-2);
+  font-size: .8rem;
+}
+
+.result-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+
+/* 基准卡片 */
+.bench-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.bench-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+.bench-label { font-size: .8rem; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+
+.bench-value {
+  display: block;
+  margin: 6px 0 2px;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.bench-value small { font-size: .5em; font-weight: 700; color: var(--muted); margin-left: 2px; }
+
+.bench-diff { font-size: .84rem; font-weight: 700; }
+.bench-diff.good { color: var(--green-600); }
+.bench-diff.bad { color: #dc2626; }
+.bench-diff.even { color: var(--muted); }
+
+/* 图表 */
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.chart-grid .card { margin-bottom: 18px; }
+
+.donut-wrap { position: relative; height: 260px; }
+
+.chart { width: 100%; height: 100%; }
+
+.chart-bar { height: 260px; }
+
+.chart-line { height: 150px; }
+
+.donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  gap: 2px;
+}
+
+.donut-center span {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.02em;
+}
+
+.donut-center small { font-size: .72rem; color: var(--muted); }
+
+.legend {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 0;
+  margin: 12px 0 0;
+}
+
+.legend li { display: flex; align-items: center; gap: 7px; font-size: .82rem; color: var(--ink-2); }
+
+.legend .dot { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.legend .val { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.chart-note { margin-top: 12px; font-size: .78rem; color: #94a3b8; }
+
+/* 离线兜底图形 */
+.fb-donut { width: 100%; height: 100%; display: block; }
+.fb-bar-row { display: grid; grid-template-columns: 92px 1fr 74px; align-items: center; gap: 10px; margin-bottom: 12px; }
+.fb-bar-track { display: block; height: 16px; border-radius: 999px; background: #f1f5f4; overflow: hidden; }
+.fb-bar-fill { display: block; height: 100%; border-radius: 999px; }
+.fb-bar-label { font-size: .8rem; color: var(--ink-2); text-align: right; white-space: nowrap; }
+.fb-bar-value { font-size: .8rem; font-weight: 700; color: var(--ink-2); text-align: right; font-variant-numeric: tabular-nums; }
+
+/* 明细表 */
+.detail-table tbody tr:hover { background: #fbfdfc; }
+
+.cat-dot { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 8px; vertical-align: 1px; }
+
+.share-cell { display: flex; align-items: center; gap: 8px; min-width: 110px; }
+.share-track { display: block; flex: 1; height: 6px; border-radius: 999px; background: #f1f5f4; overflow: hidden; }
+.share-fill { display: block; height: 100%; border-radius: 999px; }
+.share-pct { font-size: .76rem; color: var(--muted); width: 40px; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* 建议 */
+.sugs .card-sub b { color: var(--green-700); }
+
+.sug-list { list-style: none; counter-reset: sug; padding: 0; margin: 0; display: grid; gap: 12px; }
+
+.sug-item {
+  counter-increment: sug;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #fcfdfd;
+  transition: border-color .18s, transform .18s, box-shadow .18s;
+}
+
+.sug-item:hover { border-color: var(--green-200); box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+
+.sug-item::before {
+  content: counter(sug);
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  background: var(--green-50);
+  border: 1px solid var(--green-100);
+  color: var(--green-700);
+  font-weight: 800;
+  font-size: .84rem;
+}
+
+.sug-main { min-width: 0; }
+.sug-title { font-size: .94rem; font-weight: 700; color: var(--ink); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.sug-desc { font-size: .82rem; color: var(--muted); margin-top: 3px; }
+
+.sug-tag {
+  font-size: .68rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--green-50);
+  color: var(--green-700);
+  border: 1px solid var(--green-100);
+}
+
+.sug-tag.hot { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+
+.sug-save {
+  text-align: right;
+  font-size: .78rem;
+  color: var(--muted);
+  white-space: nowrap;
+  padding-top: 2px;
+}
+
+.sug-save b { display: block; font-size: 1.02rem; color: var(--green-700); font-variant-numeric: tabular-nums; }
+
+/* 模拟器 */
+.sim-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(230px, .75fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.sim-controls { display: grid; gap: 12px; }
+
+.sim-row { padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: #fbfdfc; }
+
+.sim-row-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+
+.sim-row-title { font-size: .86rem; font-weight: 600; color: var(--ink-2); }
+
+.sim-value { font-size: .8rem; font-weight: 700; color: var(--green-700); font-variant-numeric: tabular-nums; }
+
+.sim-row input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 20px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.sim-row input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px; border-radius: 999px;
+  background: linear-gradient(90deg, var(--green-500), var(--green-200));
+}
+
+.sim-row input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; margin-top: -6px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: #fff; border: 3px solid var(--green-600);
+  box-shadow: 0 2px 8px rgba(6, 78, 59, .3);
+}
+
+.sim-row input[type="range"]::-moz-range-track {
+  height: 6px; border-radius: 999px;
+  background: linear-gradient(90deg, var(--green-500), var(--green-200));
+}
+
+.sim-row input[type="range"]::-moz-range-thumb {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #fff; border: 3px solid var(--green-600);
+}
+
+.sim-result {
+  position: sticky;
+  top: 84px;
+  padding: 20px;
+  border-radius: var(--radius);
+  background: linear-gradient(160deg, #064e3b, #0f766e 70%, #0e7490);
+  color: #ecfeff;
+  box-shadow: var(--shadow);
+}
+
+.sim-label { font-size: .78rem; opacity: .78; }
+
+.sim-number {
+  font-size: clamp(2.2rem, 6vw, 3rem);
+  font-weight: 800;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.03em;
+  color: #fff;
+}
+
+.sim-number small { font-size: .38em; font-weight: 700; opacity: .8; margin-left: 4px; }
+
+.sim-delta { font-size: .86rem; margin-top: 4px; min-height: 1.4em; font-weight: 700; }
+.sim-delta.down { color: #6ee7b7; }
+.sim-delta.up { color: #fca5a5; }
+.sim-delta.flat { color: rgba(236, 254, 255, .7); }
+
+.sim-grade { font-size: .8rem; opacity: .85; margin-top: 2px; }
+
+.sim-bar {
+  position: relative;
+  height: 8px;
+  margin: 16px 0 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .18);
+  overflow: hidden;
+}
+
+.sim-bar-fill {
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #6ee7b7, #34d399);
+  transition: width .35s ease;
+}
+
+.sim-target { font-size: .76rem; opacity: .8; margin-bottom: 14px; }
+
+.sim-result .btn-light {
+  background: rgba(255, 255, 255, .16);
+  border-color: rgba(255, 255, 255, .3);
+  color: #fff;
+}
+
+.sim-result .btn-light:hover { background: rgba(255, 255, 255, .26); }
+
+/* ------------------------------ 页脚 ------------------------------ */
+.footer {
+  margin-top: 48px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+  font-size: .8rem;
+  color: var(--muted);
+}
+
+.footer-dim { margin-top: 4px; color: #94a3b8; font-size: .76rem; }
+
+/* ------------------------------ 抽屉 ------------------------------ */
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, .32);
+  backdrop-filter: blur(2px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .24s;
+  z-index: 40;
+}
+
+.drawer-backdrop.is-open { opacity: 1; pointer-events: auto; }
+
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: min(400px, 92vw);
+  background: var(--bg);
+  border-left: 1px solid var(--line);
+  box-shadow: var(--shadow-lg);
+  transform: translateX(102%);
+  transition: transform .3s cubic-bezier(.4, 0, .2, 1);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+}
+
+.drawer.is-open { transform: none; }
+
+.drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.drawer-head h3 { font-size: 1.05rem; }
+
+.icon-btn {
+  border: 0;
+  background: #f1f5f4;
+  color: var(--ink-2);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: .9rem;
+  line-height: 1;
+  transition: background .18s;
+}
+
+.icon-btn:hover { background: #e2e8f0; }
+
+.drawer-body { flex: 1; overflow-y: auto; padding: 18px 20px 24px; }
+
+.drawer-foot { padding: 14px 20px; border-top: 1px solid var(--line); }
+
+.history-empty { text-align: center; padding: 40px 8px; color: var(--ink-2); font-size: .9rem; }
+.history-empty .dim { color: var(--muted); font-size: .82rem; margin-top: 6px; }
+
+.history-list { display: grid; gap: 10px; }
+
+.hist-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.hist-date { font-size: .74rem; color: var(--muted); }
+.hist-total { font-size: 1.18rem; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
+.hist-total small { font-size: .55em; color: var(--muted); font-weight: 700; margin-left: 2px; }
+.hist-grade { font-size: .7rem; font-weight: 800; padding: 2px 9px; border-radius: 999px; color: #fff; }
+.hist-side { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+
+.hist-del {
+  border: 0;
+  background: none;
+  color: #cbd5e1;
+  cursor: pointer;
+  font-size: .82rem;
+  padding: 2px 4px;
+  border-radius: 6px;
+}
+
+.hist-del:hover { color: #dc2626; background: #fef2f2; }
+
+/* ------------------------------ 弹窗 ------------------------------ */
+.modal {
+  position: fixed;
+  inset: 0;
+  display: none;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, .5);
+  backdrop-filter: blur(3px);
+  z-index: 60;
+}
+
+.modal.is-open { display: grid; }
+
+.modal-panel {
+  width: min(420px, 100%);
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  border-radius: 22px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  animation: rise .26s ease both;
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.modal-head h3 { font-size: 1rem; }
+
+.card-preview {
+  padding: 18px;
+  overflow-y: auto;
+  background: #f1f5f4;
+  display: grid;
+  place-items: center;
+}
+
+#shareCanvas {
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  display: block;
+}
+
+.modal-foot {
+  display: flex;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--line);
+}
+
+.modal-foot .btn { flex: 1; }
+
+/* ------------------------------ 提示 ------------------------------ */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 26px;
+  transform: translate(-50%, 20px);
+  background: rgba(15, 23, 42, .92);
+  color: #f8fafc;
+  font-size: .86rem;
+  padding: 10px 20px;
+  border-radius: 999px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .24s, transform .24s;
+  z-index: 70;
+  max-width: 90vw;
+  text-align: center;
+}
+
+.toast.is-open { opacity: 1; transform: translate(-50%, 0); }
+
+/* ------------------------------ 响应式 ------------------------------ */
+@media (max-width: 900px) {
+  .form-grid,
+  .chart-grid,
+  .bench-grid,
+  .steps,
+  .bench-note { grid-template-columns: minmax(0, 1fr); }
+
+  .sim-body { grid-template-columns: minmax(0, 1fr); }
+  .sim-result { position: static; }
+
+  .hero { padding-top: 26px; }
+  .hero-stats { gap: 10px; }
+  .stat-label { font-size: .72rem; }
+}
+
+@media (max-width: 620px) {
+  .app { padding: 0 14px 40px; }
+  .brand-text { display: none; }
+  .nav-btn { padding: 7px 11px; font-size: .85rem; }
+  .hero-stats { grid-template-columns: minmax(0, 1fr); }
+  .cat-card, .card, .result-hero { padding: 18px; }
+  .result-hero-top { gap: 14px; }
+  .grade-badge { width: 74px; height: 74px; border-radius: 20px; font-size: 1.6rem; }
+  .sug-item { grid-template-columns: 30px minmax(0, 1fr); }
+  .sug-save { grid-column: 2; text-align: left; display: flex; align-items: baseline; gap: 6px; }
+  .sim-row-head { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .slider-field { flex-direction: column; align-items: stretch; gap: 8px; }
+  .num-wrap { justify-content: flex-end; }
+  .choices { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); }
+  .choices-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .fb-bar-row { grid-template-columns: 76px 1fr 62px; }
+  /* 窄屏下明细表只保留三项，避免横向滚动 */
+  .detail-table { min-width: 0; font-size: .8rem; }
+  .detail-table th, .detail-table td { padding: 8px 10px; }
+  .detail-table th:nth-child(4), .detail-table td:nth-child(4) { display: none; }
+  .detail-table td.amount { white-space: normal; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+  html { scroll-behavior: auto; }
+}
+
+/* =========================================================
+   表单状态条（app.js 的 showStatus / hideStatus 在用）
+   三种状态：is-error 红 / is-warn 黄 / is-ok 绿
+   ========================================================= */
+.form-status {
+  display: flex; align-items: flex-start; gap: 9px;
+  margin: 14px 0 0; padding: 10px 14px;
+  border-radius: 12px; font-size: .86rem; line-height: 1.45;
+  border: 1px solid transparent;
+  animation: fsIn .18s ease both;
+}
+.form-status.is-hidden { display: none; }
+
+.form-status.is-error { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
+.form-status.is-warn  { background: #fffbeb; border-color: #fde68a; color: #b45309; }
+.form-status.is-ok    { background: var(--green-50); border-color: var(--green-200); color: var(--green-700); }
+
+.form-status .fs-icon {
+  flex: none; width: 18px; height: 18px; margin-top: 1px;
+  border-radius: 50%; display: grid; place-items: center;
+  font-size: 11px; font-weight: 800; color: #fff; line-height: 1;
+}
+.is-error .fs-icon { background: #dc2626; }
+.is-warn  .fs-icon { background: #f59e0b; }
+.is-ok    .fs-icon { background: var(--green-600); }
+
+@keyframes fsIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .form-status { animation: none; }
+}
+
+/* 出错的输入框：红边，让人一眼看到是哪一格 */
+.js-num.is-invalid {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, .12);
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <button class="brand" data-nav="home" aria-label="返回首页">
+      <span class="brand-mark" aria-hidden="true">🌱</span>
+      <span class="brand-text">碳足迹计算器</span>
+    </button>
+    <nav class="topnav" aria-label="主导航">
+      <button class="nav-btn is-active" data-nav="home">首页</button>
+      <button class="nav-btn" data-nav="form">开始计算</button>
+      <button class="nav-btn" id="btnHistory">历史记录</button>
+    </nav>
+  </header>
+
+  <main id="main">
+
+    <!-- ============================ 首页 ============================ -->
+    <section class="view is-active" id="view-home">
+      <div class="hero">
+        <span class="pill">🌍 中国居民生活消费相关碳排放约占全国总量的 <b>30%</b> 左右</span>
+        <h1>你一年，排了多少碳？</h1>
+        <p class="hero-sub">5 分钟、4 类问题，算清你自己的年度碳足迹 —— 再顺手把它降下来。</p>
+        <div class="hero-actions">
+          <button class="btn btn-primary btn-lg" data-nav="form">开始计算 →</button>
+          <a class="btn btn-ghost btn-lg" href="#method">看看怎么算的</a>
+        </div>
+        <div class="hero-stats">
+          <div class="stat">
+            <span class="stat-num">8.0 <small>t</small></span>
+            <span class="stat-label">全国人均排放 / 年</span>
+          </div>
+          <div class="stat">
+            <span class="stat-num">4.7 <small>t</small></span>
+            <span class="stat-label">全球人均排放 / 年</span>
+          </div>
+          <div class="stat">
+            <span class="stat-num accent">2.0 <small>t</small></span>
+            <span class="stat-label">巴黎协定 1.5℃ 目标 / 人</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="steps">
+        <div class="step-card">
+          <span class="step-index">01</span>
+          <h3>录入 4 类活动</h3>
+          <p>出行、用电、饮食、日常消费，每类 2~3 个问题，不用翻电费单也能填。</p>
+        </div>
+        <div class="step-card">
+          <span class="step-index">02</span>
+          <h3>按系数换算</h3>
+          <p>总排放 = Σ（活动量 × 排放系数），所有系数公开可查，页面上就能看到。</p>
+        </div>
+        <div class="step-card">
+          <span class="step-index">03</span>
+          <h3>看排名、拿方案</h3>
+          <p>分项占比、基准线对比、等级勋章，还有按你的数据动态生成的减排清单。</p>
+        </div>
+      </div>
+
+      <section class="method" id="method">
+        <div class="section-head">
+          <h2>算法说明：排放因子法</h2>
+          <p>核心公式只有一行，参数全部来自公开研究，评委可以逐项核对。</p>
+        </div>
+
+        <div class="formula">
+          <span class="formula-main">总排放&nbsp;=&nbsp;Σ（活动量<sub>i</sub> × 排放系数<sub>i</sub>）</span>
+          <span class="formula-note">人均用电 &nbsp;=&nbsp; 家庭月用电 × 12 ÷ 家庭人口</span>
+        </div>
+
+        <div class="table-wrap">
+          <table class="factor-table">
+            <caption>输入项 — 系数 — 依据（kg CO₂e）</caption>
+            <thead>
+              <tr><th>类别</th><th>输入项</th><th>单位</th><th>排放系数</th><th>依据 / 说明</th></tr>
+            </thead>
+            <tbody>
+              <tr><th rowspan="6">出行</th><td>燃油私家车</td><td>km</td><td class="num">0.20</td><td>百公里油耗约 7 L，汽油 2.3 kg CO₂/L</td></tr>
+              <tr><td>新能源私家车</td><td>km</td><td class="num">0.10</td><td>百公里电耗 17 kWh × 电网因子 0.5703</td></tr>
+              <tr><td>打车 / 网约车</td><td>km</td><td class="num">0.16</td><td>含空驶与调度，略低于私家车</td></tr>
+              <tr><td>公交 / 地铁</td><td>人·km</td><td class="num">0.045 / 0.032</td><td>城市客运平均载客率折算</td></tr>
+              <tr><td>电动自行车</td><td>km</td><td class="num">0.007</td><td>百公里电耗约 1.2 kWh</td></tr>
+              <tr><td>步行 / 骑行</td><td>km</td><td class="num">0</td><td>不计入直接排放</td></tr>
+              <tr><th rowspan="2">用电</th><td>家庭用电</td><td>kWh</td><td class="num">0.5703</td><td>全国电网平均 CO₂ 排放因子</td></tr>
+              <tr><td>按人数估算</td><td>户</td><td class="num">68~120 kWh/人·月</td><td>1~6 人户阶梯估算，人越多人均越低</td></tr>
+              <tr><th rowspan="3">饮食</th><td>红肉</td><td>次</td><td class="num">2.0</td><td>每次 150 g，混合红肉 13.3 kg CO₂/kg（牛 27、猪 6、羊 20）</td></tr>
+              <tr><td>外卖</td><td>次</td><td class="num">0.45</td><td>餐盒、包装、配送与额外食物浪费</td></tr>
+              <tr><td>基础饮食</td><td>年</td><td class="num">560 / 700 / 950</td><td>以植物为主 / 荤素均衡 / 以肉为主</td></tr>
+              <tr><th rowspan="2">消费</th><td>衣物</td><td>元/年</td><td class="num">0.06</td><td>纺织服装按消费额折算（含生产与运输）</td></tr>
+              <tr><td>电子产品</td><td>元/年</td><td class="num">0.04</td><td>按消费额折算（含生产制造）</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="bench-note">
+          <div class="bench-item"><b>8.0 t</b><span>全国人均：中国能源相关 CO₂ 人均排放约 8 吨 / 年</span></div>
+          <div class="bench-item"><b>4.7 t</b><span>全球人均：全球平均约 4.7 吨 / 年</span></div>
+          <div class="bench-item"><b>2.0 t</b><span>巴黎协定：1.5℃ 情景下 2050 年人均需降至 2 吨以内</span></div>
+        </div>
+
+        <p class="disclaimer">
+          口径说明：本工具只统计<b>居民生活消费</b>直接相关的四类活动，不含公共服务、政府支出与工业中间投入，
+          因此结果通常低于「全国人均」这类全口径数据；比较时请把它理解为「你的生活方式的相对水平」。系数取整后用于科普演示，不作为碳核算依据。
+        </p>
+      </section>
+    </section>
+
+    <!-- ============================ 输入页 ============================ -->
+    <section class="view" id="view-form">
+      <div class="form-head">
+        <h2>花 2 分钟填一下</h2>
+        <p>不确定的地方按你的感觉填就行，后面可以随时回来改。所有数据只存在你自己的浏览器里。</p>
+      </div>
+
+      <form id="cfForm" autocomplete="off" novalidate>
+        <div class="form-grid">
+
+          <!-- 出行 -->
+          <section class="cat-card" data-cat="transport">
+            <div class="cat-head">
+              <span class="cat-icon" aria-hidden="true">🚇</span>
+              <div>
+                <h3>出行</h3>
+                <p>通勤方式决定了大头</p>
+              </div>
+            </div>
+
+            <div class="q">
+              <label class="q-label">你最常怎么通勤？</label>
+              <div class="choices" role="radiogroup" aria-label="通勤方式">
+                <label class="choice"><input type="radio" name="mode" value="walk"><span>🚶<i>步行/骑行</i></span></label>
+                <label class="choice"><input type="radio" name="mode" value="ebike"><span>🛵<i>电动自行车</i></span></label>
+                <label class="choice"><input type="radio" name="mode" value="metro" checked><span>🚇<i>地铁</i></span></label>
+                <label class="choice"><input type="radio" name="mode" value="bus"><span>🚌<i>公交</i></span></label>
+                <label class="choice"><input type="radio" name="mode" value="car"><span>🚗<i>燃油私家车</i></span></label>
+                <label class="choice"><input type="radio" name="mode" value="ev"><span>🔌<i>新能源车</i></span></label>
+                <label class="choice"><input type="radio" name="mode" value="taxi"><span>🚕<i>打车</i></span></label>
+              </div>
+            </div>
+
+            <div class="q">
+              <label class="q-label" for="commuteKmNum">每周通勤里程</label>
+              <div class="slider-field" data-key="commuteKm">
+                <input type="range" class="js-range" min="0" max="200" step="5" value="40" aria-label="每周通勤里程">
+                <div class="num-wrap">
+                  <input type="number" class="js-num" id="commuteKmNum" min="0" max="200" step="5" value="40">
+                  <span class="unit">km / 周</span>
+                </div>
+              </div>
+              <p class="hint">通勤单程 10 km、一周 5 天 ≈ 100 km/周</p>
+            </div>
+
+            <div class="q">
+              <label class="q-label" for="otherKmNum">每周其他出行里程</label>
+              <div class="slider-field" data-key="otherKm">
+                <input type="range" class="js-range" min="0" max="200" step="5" value="20" aria-label="每周其他出行里程">
+                <div class="num-wrap">
+                  <input type="number" class="js-num" id="otherKmNum" min="0" max="200" step="5" value="20">
+                  <span class="unit">km / 周</span>
+                </div>
+              </div>
+              <p class="hint">逛街、周末出门等，按同样的方式折算</p>
+            </div>
+          </section>
+
+          <!-- 用电 -->
+          <section class="cat-card" data-cat="elec">
+            <div class="cat-head">
+              <span class="cat-icon" aria-hidden="true">💡</span>
+              <div>
+                <h3>用电</h3>
+                <p>空调和热水器是大户</p>
+              </div>
+            </div>
+
+            <div class="q">
+              <label class="q-label">家用怎么算？</label>
+              <div class="segmented" role="tablist" aria-label="用电量录入方式">
+                <button type="button" class="seg is-active" data-elecmode="direct" role="tab" aria-selected="true">填月用电量</button>
+                <button type="button" class="seg" data-elecmode="estimate" role="tab" aria-selected="false">按人数估算</button>
+              </div>
+            </div>
+
+            <div class="q" id="kwhDirectWrap">
+              <label class="q-label" for="monthlyKwhNum">家庭每月用电量</label>
+              <div class="slider-field" data-key="monthlyKwh">
+                <input type="range" class="js-range" min="30" max="800" step="10" value="240" aria-label="家庭每月用电量">
+                <div class="num-wrap">
+                  <input type="number" class="js-num" id="monthlyKwhNum" min="30" max="800" step="10" value="240">
+                  <span class="unit">度 / 月</span>
+                </div>
+              </div>
+              <p class="hint">电费单上看「本期用电量」，或用 电费 ÷ 电价 估一下</p>
+            </div>
+
+            <div class="q is-hidden" id="kwhEstimateWrap">
+              <p class="estimate-box" id="estBox">按 3 人家庭估算：约 276 度 / 月</p>
+              <p class="hint">上方的家庭人口会一起影响估算结果</p>
+            </div>
+
+            <div class="q">
+              <label class="q-label" for="householdNum">家庭人口</label>
+              <div class="slider-field" data-key="household">
+                <input type="range" class="js-range" min="1" max="6" step="1" value="3" aria-label="家庭人口">
+                <div class="num-wrap">
+                  <input type="number" class="js-num" id="householdNum" min="1" max="6" step="1" value="3">
+                  <span class="unit">人</span>
+                </div>
+              </div>
+              <p class="hint">家庭用电按人数平摊到你身上</p>
+            </div>
+          </section>
+
+          <!-- 饮食 -->
+          <section class="cat-card" data-cat="food">
+            <div class="cat-head">
+              <span class="cat-icon" aria-hidden="true">🍚</span>
+              <div>
+                <h3>饮食</h3>
+                <p>红肉和外卖是关键词</p>
+              </div>
+            </div>
+
+            <div class="q">
+              <label class="q-label" for="redMeatNum">每周吃红肉（猪牛羊）的次数</label>
+              <div class="slider-field" data-key="redMeat">
+                <input type="range" class="js-range" min="0" max="14" step="1" value="4" aria-label="每周红肉次数">
+                <div class="num-wrap">
+                  <input type="number" class="js-num" id="redMeatNum" min="0" max="14" step="1" value="4">
+                  <span class="unit">次 / 周</span>
+                </div>
+              </div>
+              <p class="hint">按每次 150 g 计，一口肉也算一次</p>
+            </div>
+
+            <div class="q">
+              <label class="q-label" for="takeoutNum">每周点外卖的次数</label>
+              <div class="slider-field" data-key="takeout">
+                <input type="range" class="js-range" min="0" max="21" step="1" value="3" aria-label="每周外卖次数">
+                <div class="num-wrap">
+                  <input type="number" class="js-num" id="takeoutNum" min="0" max="21" step="1" value="3">
+                  <span class="unit">次 / 周</span>
+                </div>
+              </div>
+              <p class="hint">含早餐、奶茶的打包外带</p>
+            </div>
+
+            <div class="q">
+              <label class="q-label">你的饮食倾向</label>
+              <div class="choices choices-3">
+                <label class="choice"><input type="radio" name="diet" value="plant"><span>🥬<i>以植物为主</i></span></label>
+                <label class="choice"><input type="radio" name="diet" value="balanced" checked><span>🍱<i>荤素均衡</i></span></label>
+                <label class="choice"><input type="radio" name="diet" value="meat"><span>🥩<i>以肉为主</i></span></label>
+              </div>
+            </div>
+          </section>
+
+          <!-- 消费 -->
+          <section class="cat-card" data-cat="consume">
+            <div class="cat-head">
+              <span class="cat-icon" aria-hidden="true">🛍️</span>
+              <div>
+                <h3>日常消费</h3>
+                <p>可选，不填按 0 计算</p>
+              </div>
+            </div>
+
+            <div class="q">
+              <label class="q-label" for="clothingNum">每年买衣物的大概花费</label>
+              <div class="slider-field" data-key="clothing">
+                <input type="range" class="js-range" min="0" max="20000" step="500" value="3000" aria-label="每年衣物花费">
+                <div class="num-wrap">
+                  <input type="number" class="js-num" id="clothingNum" min="0" max="20000" step="500" value="3000">
+                  <span class="unit">元 / 年</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="q">
+              <label class="q-label" for="electronicsNum">每年买电子产品的大概花费</label>
+              <div class="slider-field" data-key="electronics">
+                <input type="range" class="js-range" min="0" max="30000" step="500" value="2000" aria-label="每年电子产品花费">
+                <div class="num-wrap">
+                  <input type="number" class="js-num" id="electronicsNum" min="0" max="30000" step="500" value="2000">
+                  <span class="unit">元 / 年</span>
+                </div>
+              </div>
+              <p class="hint">手机、电脑、耳机……换得越勤，碳越高</p>
+            </div>
+          </section>
+
+        </div>
+
+        <!-- 表单状态条：默认隐藏，由 app.js 的 showStatus() 控制 -->
+        <div class="form-status is-hidden" id="formStatus" role="status" aria-live="polite">
+          <span class="fs-icon" aria-hidden="true">!</span>
+          <span class="fs-text"></span>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary btn-lg" id="btnCalc">计算我的碳足迹</button>
+          <button type="reset" class="btn btn-ghost" id="btnReset">恢复默认值</button>
+          <span class="form-note" id="formNote">数据只保存在本机浏览器</span>
+        </div>
+      </form>
+    </section>
+
+    <!-- ============================ 结果页 ============================ -->
+    <section class="view" id="view-result">
+      <div class="card result-hero">
+        <div class="result-hero-top">
+          <div>
+            <p class="eyebrow">你的年度碳足迹</p>
+            <div class="big-number"><span id="resTotal">0.00</span><span class="unit">吨 CO₂e</span></div>
+            <p class="big-sub">折合 <b id="resKg">0</b> kg CO₂e，平均每天 <b id="resDay">0</b> kg</p>
+          </div>
+          <div class="grade-box">
+            <div class="grade-badge" id="resGrade">A</div>
+            <p class="grade-title" id="resGradeTitle">低碳生活家</p>
+          </div>
+        </div>
+        <p class="verdict" id="resVerdict"></p>
+        <div class="equiv" id="resEquiv"></div>
+        <div class="result-actions">
+          <button class="btn btn-primary" id="btnSaveHistory">保存这次结果</button>
+          <button class="btn btn-light" id="btnShare">生成分享卡片</button>
+          <button class="btn btn-ghost" data-nav="form">回去改数据</button>
+        </div>
+      </div>
+
+      <div class="bench-grid" id="benchGrid"></div>
+
+      <div class="chart-grid">
+        <div class="card">
+          <h3 class="card-title">分项占比</h3>
+          <div class="donut-wrap">
+            <div class="chart" id="donutChart"></div>
+            <div class="donut-center"><span id="donutCenter">0.00</span><small>吨 / 年</small></div>
+          </div>
+          <ul class="legend" id="donutLegend"></ul>
+        </div>
+        <div class="card">
+          <h3 class="card-title">和三条基准线比一比</h3>
+          <div class="chart chart-bar" id="barChart"></div>
+          <p class="chart-note" id="barNote"></p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 class="card-title">明细拆解</h3>
+        <div class="table-wrap">
+          <table class="detail-table">
+            <thead><tr><th>项目</th><th>活动量</th><th class="num">排放 (kg)</th><th>占比</th></tr></thead>
+            <tbody id="detailBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card sugs">
+        <h3 class="card-title">给你的减排建议</h3>
+        <p class="card-sub" id="sugSummary"></p>
+        <ol class="sug-list" id="sugList"></ol>
+      </div>
+
+      <div class="card sim">
+        <h3 class="card-title">减排模拟器</h3>
+        <p class="card-sub">拖动滑块，实时看看改变习惯能把排放降到多少</p>
+        <div class="sim-body">
+          <div class="sim-controls" id="simControls"></div>
+          <div class="sim-result">
+            <p class="sim-label">模拟后的年排放</p>
+            <div class="sim-number"><span id="simTotal">0.00</span><small>t</small></div>
+            <p class="sim-delta" id="simDelta"></p>
+            <p class="sim-grade" id="simGrade"></p>
+            <div class="sim-bar"><div class="sim-bar-fill" id="simBarFill"></div></div>
+            <p class="sim-target" id="simTarget"></p>
+            <button class="btn btn-light btn-sm" id="btnSimReset">重置模拟</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <p>个人碳足迹计算器 · 排放因子法 · 数据来自公开研究与全国电网平均排放因子</p>
+    <p class="footer-dim">结果用于科普与自我对比，不作为碳核算或交易依据。</p>
+  </footer>
+</div>
+
+<!-- 历史记录抽屉 -->
+<div class="drawer-backdrop" id="drawerBackdrop"></div>
+<aside class="drawer" id="historyDrawer" aria-hidden="true" aria-label="历史记录">
+  <div class="drawer-head">
+    <h3>历史记录</h3>
+    <button class="icon-btn" id="btnCloseDrawer" aria-label="关闭">✕</button>
+  </div>
+  <div class="drawer-body">
+    <div class="history-empty" id="historyEmpty">
+      <p>还没有记录。</p>
+      <p class="dim">算完一次后点「保存这次结果」，就能在这里看趋势。</p>
+    </div>
+    <div class="history-list is-hidden" id="historyList"></div>
+    <div class="card mini is-hidden" id="trendCard">
+      <h4>排放趋势</h4>
+      <div class="chart chart-line" id="trendChart"></div>
+    </div>
+  </div>
+  <div class="drawer-foot">
+    <button class="btn btn-ghost btn-sm" id="btnClearHistory">清空全部记录</button>
+  </div>
+</aside>
+
+<!-- 分享卡片 -->
+<div class="modal" id="cardModal" aria-hidden="true">
+  <div class="modal-panel">
+    <div class="modal-head">
+      <h3>分享卡片</h3>
+      <button class="icon-btn" id="btnCloseModal" aria-label="关闭">✕</button>
+    </div>
+    <div class="card-preview">
+      <canvas id="shareCanvas" width="1440" height="1920"></canvas>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-primary" id="btnDownloadCard">下载 PNG</button>
+      <button class="btn btn-ghost" id="btnCloseModal2">关闭</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* =========================================================
+   factors.js · 排放系数与基准数据
+   ---------------------------------------------------------
+   全部采用「排放因子法」：总排放 = Σ(活动量 × 排放系数)
+   数据来源为公开研究/官方统计的常用取值，课堂上按"示意系数"使用。
+   修改这里的数字即可调整整个模型，计算逻辑不用动。
+   ========================================================= */
+window.CF = window.CF || {};
+
+(function (CF) {
+  'use strict';
+
+  /* ---------------- 出行：kg CO₂e / km ---------------- */
+  CF.FACTORS = {
+    transport: {
+      walk:  { key: 'walk',  label: '步行 / 骑行', icon: '🚶', factor: 0.000, note: '不计入直接排放' },
+      ebike: { key: 'ebike', label: '电动自行车',  icon: '🛵', factor: 0.007, note: '百公里电耗约 1.2 kWh' },
+      metro: { key: 'metro', label: '地铁',        icon: '🚇', factor: 0.032, note: '城市轨道客运平均' },
+      bus:   { key: 'bus',   label: '公交',        icon: '🚌', factor: 0.045, note: '城市公交客运平均' },
+      taxi:  { key: 'taxi',  label: '打车 / 网约车', icon: '🚕', factor: 0.160, note: '含空驶与调度' },
+      car:   { key: 'car',   label: '燃油私家车',  icon: '🚗', factor: 0.200, note: '百公里油耗约 7 L' },
+      ev:    { key: 'ev',    label: '新能源私家车', icon: '🔌', factor: 0.100, note: '百公里电耗 17 kWh' }
+    }
+  };
+
+  /* ---------------- 用电 ---------------- */
+  // 全国电网平均 CO₂ 排放因子（kg CO₂e / kWh）
+  CF.ELEC_FACTOR = 0.5703;
+
+  // 按人数估算：人均每月用电量（度），人越多，人均公共用电越省
+  CF.ELEC_ESTIMATE = { 1: 120, 2: 100, 3: 92, 4: 82, 5: 74, 6: 68 };
+
+  /* ---------------- 饮食 ---------------- */
+  CF.DIET = {
+    // 一次红肉按 150 g 计；混合红肉系数 13.3 kg CO₂e/kg
+    // （牛肉 27、猪肉 6、羊肉 20，按国人消费结构加权）
+    perMealKg: 0.15,
+    redMeatFactor: 13.3,
+    // 每次外卖：餐盒 + 包装 + 配送 + 额外食物浪费
+    takeoutPerMeal: 0.45,
+    // 基础饮食（主食、蔬菜、蛋奶等）年排放，kg
+    base: { plant: 560, balanced: 700, meat: 950 },
+    baseLabel: {
+      plant: '以植物为主',
+      balanced: '荤素均衡',
+      meat: '以肉为主'
+    }
+  };
+
+  // 一次红肉的排放 = 150 g × 13.3 = 2.0 kg（四舍五入后写入系数表）
+  CF.DIET.redMeatPerServing = CF.DIET.perMealKg * CF.DIET.redMeatFactor; // ≈ 1.995
+
+  /* ---------------- 消费：kg CO₂e / 元 ---------------- */
+  CF.CONSUME = {
+    clothing: 0.06,      // 衣物（纺织服装，含生产与运输）
+    electronics: 0.04    // 电子产品（含生产制造）
+  };
+
+  /* ---------------- 三条基准线：kg CO₂e / 人 / 年 ---------------- */
+  CF.BENCHMARKS = [
+    {
+      key: 'national',
+      label: '全国人均',
+      value: 8000,
+      color: '#f59e0b',
+      desc: '中国能源相关 CO₂ 人均排放约 8 吨 / 年'
+    },
+    {
+      key: 'global',
+      label: '全球人均',
+      value: 4700,
+      color: '#0ea5e9',
+      desc: '全球平均约 4.7 吨 / 年'
+    },
+    {
+      key: 'paris',
+      label: '巴黎协定目标',
+      value: 2000,
+      color: '#16a34a',
+      desc: '1.5℃ 情景下 2050 年人均需 ≤ 2 吨'
+    }
+  ];
+
+  /* ---------------- 等级勋章 ---------------- */
+  CF.GRADES = [
+    { grade: 'A+', max: 2000,  title: '气候先锋',   color: '#059669', desc: '已经达到巴黎协定的人均目标线' },
+    { grade: 'A',  max: 3500,  title: '低碳生活家', color: '#10b981', desc: '明显低于全球人均水平' },
+    { grade: 'B',  max: 5000,  title: '中等排放',   color: '#3b82f6', desc: '接近全球人均，还有下降空间' },
+    { grade: 'C',  max: 8000,  title: '偏高排放',   color: '#f59e0b', desc: '高于全球人均，接近国内人均' },
+    { grade: 'D',  max: Infinity, title: '高排放',  color: '#dc2626', desc: '已超过全国人均水平' }
+  ];
+
+  /* ---------------- 四大类别的颜色 ---------------- */
+  CF.CATEGORY = [
+    { key: 'transport', label: '出行',   icon: '🚇', color: '#0ea5e9' },
+    { key: 'elec',      label: '用电',   icon: '💡', color: '#f59e0b' },
+    { key: 'food',      label: '饮食',   icon: '🍚', color: '#16a34a' },
+    { key: 'consume',   label: '消费',   icon: '🛍️', color: '#a855f7' }
+  ];
+
+  /* ---------------- 小工具 ---------------- */
+  // 一棵成年树一年大约吸收 20 kg CO₂
+  CF.TREE_KG_PER_YEAR = 20;
+
+  CF.fmt = function (n, digits) {
+    var d = typeof digits === 'number' ? digits : 0;
+    var v = Number(n);
+    if (!isFinite(v)) v = 0;
+    var s = v.toFixed(d);
+    var parts = s.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return parts.join('.');
+  };
+
+  // kg → 吨，保留两位
+  CF.toTons = function (kg) {
+    return (Number(kg) || 0) / 1000;
+  };
+
+  CF.tonsText = function (kg, digits) {
+    return CF.toTons(kg).toFixed(typeof digits === 'number' ? digits : 2);
+  };
+
+})(window.CF);
+
+</script>
+<script>
+/* =========================================================
+   engine.js · 计算引擎
+   ---------------------------------------------------------
+   输入 → 归一化 → 按排放系数换算 → 分项汇总 → 总量 + 等级
+   所有口径都写在这里，页面只负责展示。
+   ========================================================= */
+window.CF = window.CF || {};
+
+(function (CF) {
+  'use strict';
+
+  var WEEKS_PER_YEAR = 52;
+  var MONTHS_PER_YEAR = 12;
+
+  function clamp(n, min, max) {
+    n = Number(n);
+    if (!isFinite(n)) n = min;
+    return Math.min(max, Math.max(min, n));
+  }
+
+  /* 按人数估算家庭月用电量（返回家庭总量与人均值） */
+  CF.estimateElec = function (people) {
+    var p = clamp(Math.round(people || 1), 1, 6);
+    var per = CF.ELEC_ESTIMATE[p] || 80;
+    return { people: p, perPerson: per, total: per * p };
+  };
+
+  /* 输入归一化：任何脏数据都在这里被夹到合法区间 */
+  CF.normalizeInput = function (raw) {
+    raw = raw || {};
+    var people = clamp(Math.round(raw.household || 1), 1, 6);
+    var elecMode = raw.elecMode === 'estimate' ? 'estimate' : 'direct';
+    var monthlyKwh = elecMode === 'estimate'
+      ? CF.estimateElec(people).total
+      : clamp(raw.monthlyKwh, 0, 2000);
+
+    var modeKey = raw.transportMode;
+    if (!CF.FACTORS.transport[modeKey]) modeKey = 'metro';
+
+    var dietKey = raw.dietType;
+    if (!CF.DIET.base[dietKey]) dietKey = 'balanced';
+
+    return {
+      transportMode: modeKey,
+      commuteKm: clamp(raw.commuteKm, 0, 1000),
+      otherKm: clamp(raw.otherKm, 0, 1000),
+      commuteFactor: typeof raw.commuteFactor === 'number' ? clamp(raw.commuteFactor, 0, 1) : null,
+      otherFactor: typeof raw.otherFactor === 'number' ? clamp(raw.otherFactor, 0, 1) : null,
+      elecMode: elecMode,
+      monthlyKwh: monthlyKwh,
+      household: people,
+      redMeat: clamp(Math.round(raw.redMeat), 0, 21),
+      takeout: clamp(Math.round(raw.takeout), 0, 35),
+      dietType: dietKey,
+      clothing: clamp(raw.clothing, 0, 200000),
+      electronics: clamp(raw.electronics, 0, 200000)
+    };
+  };
+
+  /* 等级：按年度总量（kg）划线 */
+  CF.gradeOf = function (totalKg) {
+    for (var i = 0; i < CF.GRADES.length; i++) {
+      if (totalKg <= CF.GRADES[i].max) return CF.GRADES[i];
+    }
+    return CF.GRADES[CF.GRADES.length - 1];
+  };
+
+  /* 主计算 */
+  CF.compute = function (raw) {
+    var input = CF.normalizeInput(raw);
+    var mode = CF.FACTORS.transport[input.transportMode];
+    var factor = input.commuteFactor === null ? mode.factor : input.commuteFactor;
+    var otherFactor = input.otherFactor === null ? mode.factor : input.otherFactor;
+
+    /* --- 出行 --- */
+    var commuteKmYear = input.commuteKm * WEEKS_PER_YEAR;
+    var otherKmYear = input.otherKm * WEEKS_PER_YEAR;
+    var commute = commuteKmYear * factor;
+    var other = otherKmYear * otherFactor;
+
+    /* --- 用电（家庭总量按人数平摊）--- */
+    var elecKwhYear = input.monthlyKwh * MONTHS_PER_YEAR / input.household;
+    var elec = elecKwhYear * CF.ELEC_FACTOR;
+
+    /* --- 饮食 --- */
+    var foodBase = CF.DIET.base[input.dietType];
+    var redMeatKg = input.redMeat * WEEKS_PER_YEAR * CF.DIET.redMeatPerServing;
+    var takeoutKg = input.takeout * WEEKS_PER_YEAR * CF.DIET.takeoutPerMeal;
+
+    /* --- 消费 --- */
+    var clothingKg = input.clothing * CF.CONSUME.clothing;
+    var electronicsKg = input.electronics * CF.CONSUME.electronics;
+
+    var transport = commute + other;
+    var food = foodBase + redMeatKg + takeoutKg;
+    var consume = clothingKg + electronicsKg;
+    var total = transport + elec + food + consume;
+
+    var items = [
+      { key: 'transport', label: '出行', icon: '🚇', color: '#0ea5e9', kg: transport },
+      { key: 'elec',      label: '用电', icon: '💡', color: '#f59e0b', kg: elec },
+      { key: 'food',      label: '饮食', icon: '🍚', color: '#16a34a', kg: food },
+      { key: 'consume',   label: '消费', icon: '🛍️', color: '#a855f7', kg: consume }
+    ];
+
+    items.forEach(function (it) {
+      it.share = total > 0 ? it.kg / total : 0;
+    });
+
+    var rows = [
+      { label: '通勤（' + mode.label + '）', amount: CF.fmt(commuteKmYear) + ' km/年', kg: commute, color: '#0ea5e9' },
+      { label: '其他出行', amount: CF.fmt(otherKmYear) + ' km/年', kg: other, color: '#38bdf8' },
+      { label: '家庭用电（人均）', amount: CF.fmt(elecKwhYear) + ' kWh/年', kg: elec, color: '#f59e0b' },
+      { label: '红肉', amount: CF.fmt(input.redMeat * WEEKS_PER_YEAR) + ' 次/年', kg: redMeatKg, color: '#16a34a' },
+      { label: '日常饮食（' + CF.DIET.baseLabel[input.dietType] + '）', amount: '按饮食结构估算', kg: foodBase, color: '#4ade80' },
+      { label: '外卖', amount: CF.fmt(input.takeout * WEEKS_PER_YEAR) + ' 次/年', kg: takeoutKg, color: '#a3e635' },
+      { label: '衣物', amount: CF.fmt(input.clothing) + ' 元/年', kg: clothingKg, color: '#a855f7' },
+      { label: '电子产品', amount: CF.fmt(input.electronics) + ' 元/年', kg: electronicsKg, color: '#c084fc' }
+    ].filter(function (r) { return r.kg > 0.5; });
+
+    var grade = CF.gradeOf(total);
+
+    return {
+      input: input,
+      factor: factor,
+      mode: mode,
+      transport: transport,
+      commute: commute,
+      other: other,
+      elec: elec,
+      elecKwhYear: elecKwhYear,
+      food: food,
+      foodBase: foodBase,
+      redMeatKg: redMeatKg,
+      takeoutKg: takeoutKg,
+      consume: consume,
+      clothingKg: clothingKg,
+      electronicsKg: electronicsKg,
+      total: total,
+      items: items,
+      rows: rows,
+      grade: grade
+    };
+  };
+
+  /* 把结果压成可存进 localStorage 的轻量结构 */
+  CF.snapshot = function (result) {
+    var b = {};
+    result.items.forEach(function (it) { b[it.key] = Math.round(it.kg); });
+    return {
+      ts: Date.now(),
+      total: Math.round(result.total),
+      grade: result.grade.grade,
+      breakdown: b,
+      input: result.input
+    };
+  };
+
+
+  CF.suggestions = function (r) {
+    /* 减排建议：纯函数，只依赖计算结果，方便单元测试 */
+  var inp = r.input;
+    var list = [];
+    var commuteKmYear = inp.commuteKm * WEEKS_PER_YEAR;
+    var modeFactor = r.factor;
+
+    /* 1. 通勤方式 */
+    if (commuteKmYear > 0 && modeFactor > 0.05) {
+      var target = Math.min(modeFactor, CF.FACTORS.transport.metro.factor);
+      var save = commuteKmYear * 0.4 * (modeFactor - target);
+      if (save > 5) {
+        list.push({
+          cat: '出行',
+          title: '每周挑 2 天改乘地铁 / 公交通勤',
+          desc: '你现在主要靠' + r.mode.label + '，每周通勤 ' + CF.fmt(inp.commuteKm) + ' km；把其中 2/5 换成公共交通，顺便避开通勤高峰。',
+          kg: save
+        });
+      }
+    }
+
+    /* 2. 红肉 */
+    if (inp.redMeat >= 3) {
+      var cutMeat = Math.min(2, inp.redMeat);
+      list.push({
+        cat: '饮食',
+        title: '每周少吃 ' + cutMeat + ' 次红肉',
+        desc: '一年 ' + CF.fmt(inp.redMeat * WEEKS_PER_YEAR) + ' 次红肉，减到 ' + CF.fmt((inp.redMeat - cutMeat) * WEEKS_PER_YEAR) +
+          ' 次；用鸡胸、鱼、豆制品替代，蛋白质并不会少。',
+        kg: cutMeat * WEEKS_PER_YEAR * CF.DIET.redMeatPerServing
+      });
+    }
+
+    /* 3. 外卖 */
+    if (inp.takeout >= 4) {
+      var cutTakeout = Math.max(1, Math.round(inp.takeout / 2));
+      list.push({
+        cat: '饮食',
+        title: '每周少点 ' + cutTakeout + ' 次外卖',
+        desc: '自带饭盒或去食堂，省下的不只是钱，还有一次性餐盒和配送里程。',
+        kg: cutTakeout * WEEKS_PER_YEAR * CF.DIET.takeoutPerMeal
+      });
+    }
+
+    /* 4. 用电 */
+    if (r.elec > 120) {
+      list.push({
+        cat: '用电',
+        title: '把家庭月用电降一成',
+        desc: '空调调高 1℃、换 LED 灯、拔掉待机插头。按每月 ' + CF.fmt(inp.monthlyKwh) +
+          ' 度算，省下约 ' + CF.fmt(inp.monthlyKwh * 0.1) + ' 度。',
+        kg: r.elec * 0.1
+      });
+    }
+
+    /* 5. 饮食结构 */
+    if (inp.dietType !== 'plant') {
+      var gap = r.foodBase - CF.DIET.base.plant;
+      if (gap > 0) {
+        list.push({
+          cat: '饮食',
+          title: '把饮食结构往植物性倾斜',
+          desc: '你目前是「' + CF.DIET.baseLabel[inp.dietType] + '」。每周用 2~3 餐豆制品、全谷物替代肉类，就是最省钱的一档减排。',
+          kg: gap * 0.6
+        });
+      }
+    }
+
+    /* 6. 衣物 */
+    if (inp.clothing >= 3000) {
+      list.push({
+        cat: '消费',
+        title: '衣物少买三成',
+        desc: '先穿现有的，二手循环也算；一件耐穿的基础款胜过三件快时尚。',
+        kg: r.clothingKg * 0.3
+      });
+    }
+
+    /* 7. 电子产品 */
+    if (inp.electronics >= 4000) {
+      list.push({
+        cat: '消费',
+        title: '手机 / 电脑多用一年',
+        desc: '把换机周期从 2 年拉到 3 年，制造环节的排放直接被摊薄三分之一。',
+        kg: r.electronicsKg * 0.33
+      });
+    }
+
+    /* 8. 兜底：数据都很低时也给几条 */
+    var fallback = [
+      { cat: '出行', title: '3 公里内步行或骑车', desc: '每周 3 次短途不坐车，一年就是 150 多公里。', kg: 3 * 3 * WEEKS_PER_YEAR * CF.FACTORS.transport.car.factor },
+      { cat: '用电', title: '随手关灯、拔掉待机插头', desc: '待机功耗通常占家庭用电的 5%~10%。', kg: 60 },
+      { cat: '饮食', title: '按需点餐、剩菜打包', desc: '食物浪费的排放常常被忽略。', kg: 40 }
+    ];
+    // 兜底建议也要守规矩：分项本身的排放都不够减，就不该给出这条
+    var catTotal = { '出行': r.transport, '用电': r.elec, '饮食': r.food, '消费': r.consume };
+    fallback.forEach(function (f) {
+      if (list.length >= 3) return;
+      if ((catTotal[f.cat] || 0) <= f.kg) return;
+      list.push(f);
+    });
+
+    list.sort(function (a, b) { return b.kg - a.kg; });
+    var picked = list.slice(0, 5);
+
+    // 只给「排放占比最大的那一类」打一个「重点」标记，避免满屏都是重点
+    picked.forEach(function (it) { it.hot = false; });
+    var dominant = r.items.slice().sort(function (a, b) { return b.kg - a.kg; })[0];
+    if (dominant) {
+      for (var i = 0; i < picked.length; i++) {
+        if (picked[i].cat === dominant.label) { picked[i].hot = true; break; }
+      }
+    }
+
+    return picked;
+  };
+
+})(window.CF);
+
+</script>
+<script>
+/* =========================================================
+   charts.js · 图表
+   ---------------------------------------------------------
+   优先用 ECharts（CDN，带多个源），拿不到就退化成
+   原生 SVG / HTML 图形，保证断网也能正常演示。
+   ========================================================= */
+window.CF = window.CF || {};
+
+(function (CF) {
+  'use strict';
+
+  var CDN_LIST = [
+    'https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js',
+    'https://unpkg.com/echarts@5.5.0/dist/echarts.min.js',
+    'https://cdn.staticfile.org/echarts/5.5.0/echarts.min.js',
+    'https://lib.baomitu.com/echarts/5.5.0/echarts.min.js'
+  ];
+
+  var libPromise = null;
+  var instances = [];
+
+  function hasLib() {
+    return typeof window.echarts !== 'undefined' && window.echarts && typeof window.echarts.init === 'function';
+  }
+
+  function ensureLib() {
+    if (libPromise) return libPromise;
+    libPromise = new Promise(function (resolve) {
+      if (hasLib()) { resolve(true); return; }
+
+      var index = 0;
+
+      function tryNext() {
+        if (index >= CDN_LIST.length) { resolve(false); return; }
+        var url = CDN_LIST[index++];
+        var script = document.createElement('script');
+        var settled = false;
+        var timer = setTimeout(function () {
+          if (settled) return;
+          settled = true;
+          if (script.parentNode) script.parentNode.removeChild(script);
+          tryNext();
+        }, 7000);
+
+        script.src = url;
+        script.async = true;
+        script.onload = function () {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          if (hasLib()) resolve(true);
+          else tryNext();
+        };
+        script.onerror = function () {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          tryNext();
+        };
+        document.head.appendChild(script);
+      }
+
+      tryNext();
+    });
+    return libPromise;
+  }
+
+  /* 清空容器，并回收旧的 ECharts 实例 */
+  function clear(el) {
+    if (!el) return;
+    if (el.__chart) {
+      try { el.__chart.dispose(); } catch (e) { /* ignore */ }
+      el.__chart = null;
+      instances = instances.filter(function (c) { return c.el !== el; });
+    }
+    el.innerHTML = '';
+  }
+
+  function mount(el, option) {
+    clear(el);
+    var chart = window.echarts.init(el, null, { renderer: 'canvas' });
+    chart.setOption(option);
+    el.__chart = chart;
+    instances.push({ el: el, chart: chart });
+    return chart;
+  }
+
+  /* ---------------- 环形图：分项占比 ---------------- */
+  function donut(el, items, total) {
+    if (!el) return;
+    clear(el);
+
+    var data = items.filter(function (it) { return it.kg > 0; });
+
+    if (hasLib()) {
+      mount(el, {
+        backgroundColor: 'transparent',
+        tooltip: {
+          trigger: 'item',
+          confine: true,
+          backgroundColor: 'rgba(15,23,42,.94)',
+          borderWidth: 0,
+          padding: [8, 12],
+          textStyle: { color: '#f8fafc', fontSize: 12 },
+          formatter: function (p) {
+            var pct = Number(p.percent || 0).toFixed(1);
+            return p.marker + ' ' + p.name + '<br/><b>' + CF.fmt(p.value) + '</b> kg CO₂e · ' + pct + '%';
+          }
+        },
+        series: [{
+          type: 'pie',
+          radius: ['62%', '86%'],
+          center: ['50%', '50%'],
+          avoidLabelOverlap: true,
+          minAngle: 3,
+          itemStyle: { borderColor: '#fff', borderWidth: 3, borderRadius: 6 },
+          label: { show: false },
+          labelLine: { show: false },
+          emphasis: {
+            scale: true,
+            scaleSize: 5,
+            itemStyle: { shadowBlur: 16, shadowColor: 'rgba(15,23,42,.22)' }
+          },
+          data: data.map(function (it) {
+            return { name: it.label, value: Math.round(it.kg), itemStyle: { color: it.color } };
+          })
+        }]
+      });
+      return;
+    }
+
+    /* --- 兜底：原生 SVG 环形图 --- */
+    var R = 72, C = 2 * Math.PI * R;
+    var offset = 0;
+    var svg = '<svg class="fb-donut" viewBox="0 0 200 200" role="img" aria-label="分项占比环形图">' +
+      '<circle cx="100" cy="100" r="' + R + '" fill="none" stroke="#f1f5f4" stroke-width="30"/>';
+    data.forEach(function (it) {
+      var share = total > 0 ? it.kg / total : 0;
+      var len = Math.max(0, share * C - 2);
+      svg += '<circle cx="100" cy="100" r="' + R + '" fill="none" stroke="' + it.color + '" stroke-width="30" ' +
+        'stroke-dasharray="' + len.toFixed(2) + ' ' + (C - len).toFixed(2) + '" ' +
+        'stroke-dashoffset="' + (-offset).toFixed(2) + '" transform="rotate(-90 100 100)">' +
+        '<title>' + it.label + ' ' + CF.tonsText(it.kg, 2) + ' t（' + (share * 100).toFixed(1) + '%）</title></circle>';
+      offset += share * C;
+    });
+    svg += '</svg>';
+    el.innerHTML = svg;
+  }
+
+  /* ---------------- 条形图：与基准线对比 ---------------- */
+  function bars(el, rows) {
+    if (!el) return;
+    clear(el);
+
+    var max = rows.reduce(function (m, r) { return Math.max(m, r.kg); }, 0);
+    var axisMax = Math.max(max * 1.28, 1000);
+
+    if (hasLib()) {
+      mount(el, {
+        backgroundColor: 'transparent',
+        grid: { left: 6, right: 64, top: 10, bottom: 6, containLabel: true },
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: { type: 'shadow' },
+          backgroundColor: 'rgba(15,23,42,.94)',
+          borderWidth: 0,
+          padding: [8, 12],
+          textStyle: { color: '#f8fafc', fontSize: 12 },
+          formatter: function (params) {
+            var p = params[0];
+            var row = rows[p.dataIndex] || {};
+            return '<b>' + p.name + '</b><br/>' + CF.tonsText(row.kg, 2) + ' 吨 CO₂e / 年' +
+              (row.note ? '<br/><span style="opacity:.7">' + row.note + '</span>' : '');
+          }
+        },
+        xAxis: {
+          type: 'value',
+          max: axisMax,
+          splitLine: { lineStyle: { color: '#eef2f0' } },
+          axisLabel: { color: '#94a3b8', fontSize: 10, formatter: function (v) { return (v / 1000) + ' t'; } },
+          axisLine: { show: false },
+          axisTick: { show: false }
+        },
+        yAxis: {
+          type: 'category',
+          data: rows.map(function (r) { return r.label; }),
+          axisTick: { show: false },
+          axisLine: { show: false },
+          axisLabel: { color: '#475569', fontSize: 11 }
+        },
+        series: [{
+          type: 'bar',
+          barWidth: 16,
+          data: rows.map(function (r) {
+            return {
+              value: Math.round(r.kg),
+              itemStyle: {
+                color: r.color,
+                opacity: r.you ? 1 : 0.62,
+                borderRadius: [0, 9, 9, 0]
+              }
+            };
+          }),
+          label: {
+            show: true,
+            position: 'right',
+            distance: 6,
+            color: '#475569',
+            fontSize: 11,
+            fontWeight: 600,
+            formatter: function (p) { return (p.value / 1000).toFixed(2) + ' t'; }
+          }
+        }]
+      });
+      return;
+    }
+
+    /* --- 兜底：HTML 条形图 --- */
+    var html = '';
+    rows.forEach(function (r) {
+      var pct = axisMax > 0 ? Math.max(2, (r.kg / axisMax) * 100) : 2;
+      html += '<div class="fb-bar-row">' +
+        '<span class="fb-bar-label"' + (r.you ? ' style="font-weight:800;color:#059669"' : '') + '>' + r.label + '</span>' +
+        '<span class="fb-bar-track"><span class="fb-bar-fill" style="width:' + pct.toFixed(1) + '%;background:' + r.color +
+        ';opacity:' + (r.you ? 1 : 0.62) + '"></span></span>' +
+        '<span class="fb-bar-value">' + CF.tonsText(r.kg, 2) + ' t</span>' +
+        '</div>';
+    });
+    el.innerHTML = html;
+  }
+
+  /* ---------------- 折线图：历史趋势 ---------------- */
+  function line(el, labels, values) {
+    if (!el) return;
+    clear(el);
+
+    if (hasLib()) {
+      mount(el, {
+        backgroundColor: 'transparent',
+        grid: { left: 4, right: 12, top: 14, bottom: 4, containLabel: true },
+        tooltip: {
+          trigger: 'axis',
+          backgroundColor: 'rgba(15,23,42,.94)',
+          borderWidth: 0,
+          padding: [8, 12],
+          textStyle: { color: '#f8fafc', fontSize: 12 },
+          formatter: function (params) {
+            var p = params[0];
+            return p.name + '<br/><b>' + Number(p.value).toFixed(2) + ' t</b> CO₂e';
+          }
+        },
+        xAxis: {
+          type: 'category',
+          data: labels,
+          boundaryGap: false,
+          axisLine: { lineStyle: { color: '#e2e8f0' } },
+          axisTick: { show: false },
+          axisLabel: { color: '#94a3b8', fontSize: 10 }
+        },
+        yAxis: {
+          type: 'value',
+          axisLabel: { color: '#94a3b8', fontSize: 10, formatter: function (v) { return v + ' t'; } },
+          splitLine: { lineStyle: { color: '#eef2f0' } }
+        },
+        series: [{
+          type: 'line',
+          smooth: true,
+          symbolSize: 7,
+          data: values,
+          lineStyle: { width: 3, color: '#16a34a' },
+          itemStyle: { color: '#16a34a', borderColor: '#fff', borderWidth: 2 },
+          areaStyle: {
+            color: {
+              type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+              colorStops: [
+                { offset: 0, color: 'rgba(22,163,74,.26)' },
+                { offset: 1, color: 'rgba(22,163,74,.02)' }
+              ]
+            }
+          }
+        }]
+      });
+      return;
+    }
+
+    /* --- 兜底：SVG 折线 --- */
+    var W = 320, H = 120, pad = 12;
+    var n = values.length;
+    var min = Math.min.apply(null, values);
+    var max = Math.max.apply(null, values);
+    var span = Math.max(max - min, 0.5);
+    var pts = values.map(function (v, i) {
+      var x = n === 1 ? W / 2 : pad + (i * (W - pad * 2)) / (n - 1);
+      var y = H - pad - ((v - min) / span) * (H - pad * 2);
+      return [x, y];
+    });
+    var d = pts.map(function (p, i) { return (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' ');
+    var area = d + ' L' + pts[pts.length - 1][0].toFixed(1) + ' ' + (H - pad) + ' L' + pts[0][0].toFixed(1) + ' ' + (H - pad) + ' Z';
+    var dots = pts.map(function (p) {
+      return '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="3.2" fill="#16a34a" stroke="#fff" stroke-width="2"/>';
+    }).join('');
+
+    el.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="width:100%;height:100%" role="img" aria-label="趋势折线图">' +
+      '<path d="' + area + '" fill="rgba(22,163,74,.14)"/>' +
+      '<path d="' + d + '" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>' +
+      dots + '</svg>';
+  }
+
+  /* ---------------- 自适应 ---------------- */
+  var resizeTimer = null;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () {
+      instances.forEach(function (item) {
+        if (item.chart && !item.chart.isDisposed()) {
+          try { item.chart.resize(); } catch (e) { /* ignore */ }
+        }
+      });
+    }, 140);
+  });
+
+  CF.charts = {
+    ensureLib: ensureLib,
+    hasLib: hasLib,
+    donut: donut,
+    bars: bars,
+    line: line
+  };
+
+})(window.CF);
+
+</script>
+<script>
+/* =========================================================
+   app.js · 界面与交互
+   ---------------------------------------------------------
+   1. 视图切换（首页 / 输入 / 结果）
+   2. 表单读取与校验
+   3. 结果渲染：大数字、等级、基准对比、图表、明细
+   4. 动态减排建议
+   5. 减排模拟器（实时重算）
+   6. 历史记录（localStorage）+ 趋势
+   7. 分享卡片（Canvas 导出 PNG）
+   ========================================================= */
+(function () {
+  'use strict';
+
+  var CF = window.CF;
+  var $ = function (sel, root) { return (root || document).querySelector(sel); };
+  var $$ = function (sel, root) {
+    return Array.prototype.slice.call((root || document).querySelectorAll(sel));
+  };
+  var WEEKS = 52;
+  var STORE_KEY = 'cf-history-v1';
+
+  var state = {
+    view: 'home',
+    elecMode: 'direct',
+    input: null,
+    result: null,
+    sim: null,
+    history: [],
+    storeOk: true
+  };
+
+  /* =======================================================
+     小工具
+     ======================================================= */
+  var toastTimer = null;
+  function toast(msg) {
+    var el = $('#toast');
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.add('is-open');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.classList.remove('is-open'); }, 2400);
+  }
+
+  /*------表单状态条------*/
+  var statusTimer = null;
+
+  function showStatus(type, text, target){
+    var el = $('#formStatus');
+    if(!el) return;
+
+    clearTimeout(statusTimer);                //连续触发时，先清掉上一次的计时器
+    el.className = 'form-status is-' + type;  //is-error / is-warn / is-ok
+    el.querySelector('.fs-icon').textContent = (type === 'ok') ? '✓' : '!';
+    el.querySelector('.fs-text').textContent = text;
+
+    //只有“真的错了”才给输入框标红；被自动修正的不算错
+    if (target && type === 'error') {
+      target.classList.add('is-invalid');
+      target.setAttribute('aria-invalid', 'true');
+    }
+
+    if (type !== 'error') {
+      statusTimer = setTimeout(hideStatus, 6000);   //提示类6秒自动消失，错误类留着等用户改
+    }
+  }
+
+  function hideStatus() {
+    var el = $('#formStatus');
+    if (el) el.className = 'form-status is-hidden';
+    $$('.is-invalid').forEach(function (input) {
+      input.classList.remove('is-invalid');
+      input.removeAttribute('aria-invalid');
+    });
+  }
+
+  function pct(a, b) {
+    if (!b) return 0;
+    return (a / b) * 100;
+  }
+
+  function fieldOf(key) {
+    return document.querySelector('.slider-field[data-key="' + key + '"]');
+  }
+
+  function syncField(field) {
+    if (!field) return 0;
+    var range = field.querySelector('.js-range');
+    var num = field.querySelector('.js-num');
+    var min = Number(range.min);
+    var max = Number(range.max);
+    var v = Number(num.value);
+    if (!isFinite(v) || num.value === '') v = min;
+
+    var fixed = Math.min(max, Math.max(min, v));
+    if (num.value !== '' && isFinite(v) && fixed !== v) {
+      showStatus('warn', '「' + fieldLabel(field) + '」范围是 ' + min + '~' + max + '，已按 ' + fixed + ' 计算', num);
+    }
+
+    num.value = fixed;
+    range.value = fixed;
+    return fixed;
+  }
+
+  /* 取这一格的标题文字，用于提示语 */
+    function fieldLabel(field) {
+      var q = field.closest('.q');
+      var label = q ? q.querySelector('.q-label') : null;
+      return label ? label.textContent.replace(/（.*?）/g, '').trim() : '这一项';
+    }
+
+  function fieldValue(key) {
+    return syncField(fieldOf(key));
+  }
+
+  /* =======================================================
+     视图切换
+     ======================================================= */
+  function show(view) {
+    if (view === 'result' && !state.result) {
+      toast('先填一下数据，算完才有结果～');
+      view = 'form';
+    }
+
+    var target = document.getElementById('view-' + view);
+    if (!target) return;
+
+    $$('.view').forEach(function (el) {
+      el.classList.toggle('is-active', el === target);
+    });
+
+    $$('.nav-btn').forEach(function (btn) {
+      btn.classList.toggle('is-active', btn.getAttribute('data-nav') === view);
+    });
+
+    state.view = view;
+
+    if (view === 'result') {
+      renderResult();
+      window.scrollTo({ top: 0, behavior: 'auto' });
+      return;
+    }
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /* =======================================================
+     表单
+     ======================================================= */
+  function setElecMode(mode) {
+    state.elecMode = mode;
+    $$('.seg').forEach(function (btn) {
+      var on = btn.getAttribute('data-elecmode') === mode;
+      btn.classList.toggle('is-active', on);
+      btn.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    var direct = $('#kwhDirectWrap');
+    var estimate = $('#kwhEstimateWrap');
+    if (direct) direct.classList.toggle('is-hidden', mode !== 'direct');
+    if (estimate) estimate.classList.toggle('is-hidden', mode !== 'estimate');
+    updateEstimateHint();
+  }
+
+  function updateEstimateHint() {
+    var box = $('#estBox');
+    if (!box) return;
+    // 这里只读不写回，避免用户输入「30」时被立刻改成「6」
+    var field = fieldOf('household');
+    var people = 3;
+    if (field) {
+      var v = Number(field.querySelector('.js-num').value);
+      people = isFinite(v) ? Math.min(6, Math.max(1, Math.round(v))) : 3;
+    }
+    var est = CF.estimateElec(people);
+    box.innerHTML = '按 ' + est.people + ' 人家庭估算：约 <b>' + est.total +
+      '</b> 度 / 月（人均 ' + est.perPerson + ' 度 / 月）';
+  }
+
+  function readInput() {
+    var modeEl = document.querySelector('input[name="mode"]:checked');
+    var dietEl = document.querySelector('input[name="diet"]:checked');
+
+    return {
+      transportMode: modeEl ? modeEl.value : 'metro',
+      commuteKm: fieldValue('commuteKm'),
+      otherKm: fieldValue('otherKm'),
+      elecMode: state.elecMode,
+      monthlyKwh: fieldValue('monthlyKwh'),
+      household: fieldValue('household'),
+      redMeat: fieldValue('redMeat'),
+      takeout: fieldValue('takeout'),
+      dietType: dietEl ? dietEl.value : 'balanced',
+      clothing: fieldValue('clothing'),
+      electronics: fieldValue('electronics')
+    };
+  }
+
+  function bindForm() {
+    $$('.slider-field').forEach(function (field) {
+      var range = field.querySelector('.js-range');
+      var num = field.querySelector('.js-num');
+      var key = field.getAttribute('data-key');
+
+      range.addEventListener('input', function () {
+        num.value = range.value;
+        if (key === 'household') updateEstimateHint();
+
+      });
+
+      num.addEventListener('input', function () {
+        var v = Number(num.value);
+        if (!isFinite(v)) return;
+        var min = Number(range.min);
+        var max = Number(range.max);
+        range.value = Math.min(max, Math.max(min, v));
+        if (key === 'household') updateEstimateHint();
+                if (num.classList.contains('is-invalid') && num.value !== '') hideStatus();
+      });
+
+      num.addEventListener('blur', function () {
+        syncField(field);
+        if (key === 'household') updateEstimateHint();
+      });
+    });
+
+    $$('.seg').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        setElecMode(btn.getAttribute('data-elecmode'));
+      });
+    });
+
+    var form = $('#cfForm');
+    if (form) {
+      form.addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        onSubmit();
+      });
+      form.addEventListener('reset', function () {
+        setTimeout(function () {
+          state.elecMode = 'direct';
+          setElecMode('direct');
+          $$('.slider-field').forEach(syncField);
+          updateEstimateHint();
+          toast('已恢复默认值');
+        }, 0);
+      });
+    }
+  }
+
+  function onSubmit() {
+
+    /* 先校验：有任何一项不能用，就挡住提交 */
+      var bad = validateForm();
+      if (bad) {
+        showStatus('error', bad.msg, bad.el);
+        bad.el.focus();          // 把光标放回出错那一格（键盘用户也能立刻改）
+        bad.el.select();
+        return;
+      }
+      hideStatus();
+
+    var input = readInput();
+    state.input = input;
+    state.result = CF.compute(input);
+
+    var note = $('#formNote');
+    if (note) note.textContent = '已按你的数据算好';
+
+    show('result');
+    toast('算好啦：一年约 ' + CF.tonsText(state.result.total, 2) + ' 吨 CO₂e');
+  }
+
+  /* 校验：返回第一个出问题的字段，全对返回 null */
+    function validateForm() {
+      var first = null;
+      $$('#cfForm .slider-field').forEach(function (field) {
+        var num = field.querySelector('.js-num');
+        var min = Number(field.querySelector('.js-range').min);
+        var max = Number(field.querySelector('.js-range').max);
+        var raw = num.value;
+        var v = Number(raw);
+        var name = fieldLabel(field);
+
+        if (first) return;                                  // 只报第一个，别一次甩十条
+        if (raw === '' || !isFinite(v)) {
+          first = { el: num, msg: '「' + name + '」还没填，请填一个 ' + min + '~' + max + ' 之间的数字' };
+        } else if (v < min || v > max) {
+          first = { el: num, msg: '「' + name + '」必须在 ' + min + '~' + max + ' 之间，现在是 ' + v };
+        }
+      });
+      return first;
+    }
+
+  /* =======================================================
+     结果：文案
+     ======================================================= */
+  function compareText(total, base, baseLabel) {
+    if (base <= 0) return '';
+    if (total <= 0) return '比' + baseLabel + '低 100%';
+    var diff = (1 - total / base) * 100;
+    if (Math.abs(diff) < 1) return '和' + baseLabel + '基本持平';
+    return diff > 0
+      ? '比' + baseLabel + '低 ' + diff.toFixed(0) + '%'
+      : '比' + baseLabel + '高 ' + Math.abs(diff).toFixed(0) + '%';
+  }
+
+  function buildVerdict(r) {
+    var total = r.total;
+    var nat = 8000, glob = 4700, paris = 2000;
+    var parts = [];
+
+    parts.push('你一年排放 <b>' + CF.tonsText(total, 2) + ' 吨</b>，' + compareText(total, nat, '全国人均（8.0 吨）'));
+    parts.push(compareText(total, glob, '全球人均（4.7 吨）'));
+
+    if (total <= paris) {
+      parts.push('已经低于巴黎协定人均目标线（2.0 吨），属于真正意义上的低碳生活 🎉');
+    } else {
+      parts.push('仍是巴黎协定目标（2.0 吨）的 <b>' + (total / paris).toFixed(2) + ' 倍</b>');
+    }
+
+    return parts.join('，') + '。';
+  }
+
+  function buildEquiv(r) {
+    var total = r.total;
+    var trees = Math.round(total / CF.TREE_KG_PER_YEAR);
+    var carKm = Math.round(total / CF.FACTORS.transport.car.factor);
+    var kwh = Math.round(total / CF.ELEC_FACTOR);
+    return [
+      '🌳 约等于 ' + CF.fmt(trees) + ' 棵树一年的吸收量',
+      '🚗 约等于开车 ' + CF.fmt(carKm) + ' 公里',
+      '⚡ 约等于 ' + CF.fmt(kwh) + ' 度电的排放'
+    ].map(function (t) { return '<span>' + t + '</span>'; }).join('');
+  }
+
+  function renderBench(r) {
+    var box = $('#benchGrid');
+    if (!box) return;
+    var html = CF.BENCHMARKS.map(function (b) {
+      var diff = (1 - r.total / b.value) * 100;
+      var cls = Math.abs(diff) < 1 ? 'even' : (diff > 0 ? 'good' : 'bad');
+      var text = Math.abs(diff) < 1 ? '基本持平'
+        : (diff > 0 ? '低 ' + diff.toFixed(0) + '%' : '高 ' + Math.abs(diff).toFixed(0) + '%');
+      return '<div class="bench-card">' +
+        '<p class="bench-label"><span class="cat-dot" style="background:' + b.color + '"></span>' + b.label + '</p>' +
+        '<span class="bench-value">' + (b.value / 1000).toFixed(2) + '<small>t</small></span>' +
+        '<p class="bench-diff ' + cls + '">你 ' + text + '</p>' +
+        '</div>';
+    }).join('');
+    box.innerHTML = html;
+  }
+
+  function buildBarRows(r) {
+    return [
+      { label: '巴黎目标', kg: 2000, color: '#16a34a', note: '1.5℃ 情景 · 2050' },
+      { label: '全球人均', kg: 4700, color: '#0ea5e9', note: '全球平均' },
+      { label: '全国人均', kg: 8000, color: '#f59e0b', note: '中国能源相关 CO₂' },
+      { label: '你', kg: r.total, color: '#059669', you: true, note: '本次计算结果' }
+    ];
+  }
+
+  function renderDetail(r) {
+    var body = $('#detailBody');
+    if (!body) return;
+    var total = r.total;
+
+    var html = r.rows.map(function (row) {
+      var share = total > 0 ? (row.kg / total) * 100 : 0;
+      return '<tr>' +
+        '<td><span class="cat-dot" style="background:' + row.color + '"></span>' + row.label + '</td>' +
+        '<td class="amount">' + row.amount + '</td>' +
+        '<td class="num">' + CF.fmt(row.kg) + '</td>' +
+        '<td>' + shareCell(share, row.color) + '</td>' +
+        '</tr>';
+    }).join('');
+
+    html += '<tr style="background:#f8fafc;font-weight:800">' +
+      '<td>合计</td><td class="amount">—</td>' +
+      '<td class="num">' + CF.fmt(total) + '</td>' +
+      '<td>' + shareCell(100, '#0f172a') + '</td>' +
+      '</tr>';
+
+    body.innerHTML = html;
+  }
+
+  function shareCell(share, color) {
+    var w = Math.max(0, Math.min(100, share));
+    return '<div class="share-cell">' +
+      '<span class="share-track"><span class="share-fill" style="width:' + w.toFixed(1) + '%;background:' + color + '"></span></span>' +
+      '<span class="share-pct">' + share.toFixed(1) + '%</span>' +
+      '</div>';
+  }
+
+  function renderLegend(r) {
+    var box = $('#donutLegend');
+    if (!box) return;
+    box.innerHTML = r.items.map(function (it) {
+      return '<li><span class="dot" style="background:' + it.color + '"></span>' +
+        it.label + ' <span class="val">' + CF.tonsText(it.kg, 2) + ' t · ' +
+        (it.share * 100).toFixed(0) + '%</span></li>';
+    }).join('');
+  }
+
+  /* =======================================================
+     结果：减排建议
+     ======================================================= */
+
+  function renderSuggestions(r) {
+    var box = $('#sugList');
+    var summary = $('#sugSummary');
+    if (!box) return;
+
+    var list = CF.suggestions(r);
+    var potential = list.reduce(function (s, it) { return s + it.kg; }, 0);
+    var after = Math.max(0, r.total - potential);
+
+    if (summary) {
+      summary.innerHTML = '按你目前的排放结构（出行 ' + CF.tonsText(r.transport, 2) +
+        ' t、用电 ' + CF.tonsText(r.elec, 2) + ' t、饮食 ' + CF.tonsText(r.food, 2) +
+        ' t、消费 ' + CF.tonsText(r.consume, 2) + ' t），下面 ' + list.length +
+        ' 条全部做到，一年可减 <b>' + CF.fmt(potential) + ' kg</b>，降到 <b>' +
+        CF.tonsText(after, 2) + ' 吨</b>。';
+    }
+
+    box.innerHTML = list.map(function (it) {
+      return '<li class="sug-item">' +
+        '<div class="sug-main">' +
+        '<p class="sug-title">' + it.title +
+        '<span class="sug-tag">' + it.cat + '</span>' +
+        (it.hot ? '<span class="sug-tag hot">重点</span>' : '') +
+        '</p>' +
+        '<p class="sug-desc">' + it.desc + '</p>' +
+        '</div>' +
+        '<div class="sug-save"><b>- ' + CF.fmt(it.kg) + '</b>kg / 年</div>' +
+        '</li>';
+    }).join('');
+  }
+
+  /* =======================================================
+     减排模拟器
+     ======================================================= */
+  var SIM_DEFS = [
+    { key: 'transit', title: '通勤改为公共交通的比例', min: 0, max: 100, step: 5, suffix: '%' },
+    { key: 'redMeat', title: '每周红肉次数', min: 0, max: 14, step: 1, suffix: ' 次/周' },
+    { key: 'takeout', title: '每周外卖次数', min: 0, max: 21, step: 1, suffix: ' 次/周' },
+    { key: 'kwh', title: '家庭月用电量', min: 30, max: 800, step: 10, suffix: ' 度/月' },
+    { key: 'clothing', title: '衣物支出', min: 0, max: 100, step: 5, suffix: '%' }
+  ];
+
+  function defaultSim(r) {
+    return {
+      transit: 0,
+      redMeat: r.input.redMeat,
+      takeout: r.input.takeout,
+      kwh: Math.round(r.input.monthlyKwh),
+      clothing: 100
+    };
+  }
+
+  function simText(def, value) {
+    if (def.key === 'clothing') return '原来的 ' + value + '%';
+    return value + def.suffix;
+  }
+
+  function initSimulator(r) {
+    state.sim = defaultSim(r);
+    renderSimulator(r);
+  }
+
+  function walkSim() {
+    var r = state.result;
+    if (!r) return null;
+    var s = state.sim;
+    var inp = r.input;
+
+    var startFactor = r.factor;
+    var blended = startFactor * (1 - s.transit / 100) +
+      CF.FACTORS.transport.metro.factor * (s.transit / 100);
+    // 只允许往下降，不允许因为滑动反而变高
+    blended = Math.min(startFactor, blended);
+
+    var mod = {
+      transportMode: inp.transportMode,
+      commuteKm: inp.commuteKm,
+      otherKm: inp.otherKm,
+      commuteFactor: blended,
+      elecMode: 'direct',
+      monthlyKwh: s.kwh,
+      household: inp.household,
+      redMeat: s.redMeat,
+      takeout: s.takeout,
+      dietType: inp.dietType,
+      clothing: inp.clothing * (s.clothing / 100),
+      electronics: inp.electronics
+    };
+
+    return CF.compute(mod);
+  }
+
+  function renderSimulator(r) {
+    var controls = $('#simControls');
+    if (!controls) return;
+
+    var canTransit = r.factor > 0.032;
+
+    controls.innerHTML = SIM_DEFS.map(function (def) {
+      var disabled = def.key === 'transit' && !canTransit;
+      var max = def.max;
+      var value = state.sim[def.key];
+
+      if (def.key === 'kwh') {
+        max = Math.max(800, Math.ceil(r.input.monthlyKwh / 10) * 10);
+        max = Math.min(1500, max);
+      }
+      if (def.key === 'redMeat') max = Math.max(14, r.input.redMeat);
+      if (def.key === 'takeout') max = Math.max(21, r.input.takeout);
+
+      return '<div class="sim-row" data-sim="' + def.key + '">' +
+        '<div class="sim-row-head">' +
+        '<span class="sim-row-title">' + def.title + '</span>' +
+        '<span class="sim-value" data-sim-value="' + def.key + '">' +
+        (disabled ? '已是公共交通' : simText(def, value)) + '</span>' +
+        '</div>' +
+        '<input type="range" min="' + def.min + '" max="' + max + '" step="' + def.step + '" ' +
+        'value="' + value + '" ' + (disabled ? 'disabled' : '') +
+        ' aria-label="' + def.title + '" data-sim-input="' + def.key + '">' +
+        '</div>';
+    }).join('');
+
+    $$('[data-sim-input]').forEach(function (input) {
+      input.addEventListener('input', function () {
+        var key = input.getAttribute('data-sim-input');
+        state.sim[key] = Number(input.value);
+        var def = null;
+        SIM_DEFS.forEach(function (d) { if (d.key === key) def = d; });
+        var label = document.querySelector('[data-sim-value="' + key + '"]');
+        if (label && def) label.textContent = simText(def, state.sim[key]);
+        updateSimulator();
+      });
+    });
+
+    var resetBtn = $('#btnSimReset');
+    if (resetBtn && !resetBtn.__bound) {
+      resetBtn.__bound = true;
+      resetBtn.addEventListener('click', function () {
+        if (!state.result) return;
+        state.sim = defaultSim(state.result);
+        renderSimulator(state.result);
+        updateSimulator();
+      });
+    }
+
+    updateSimulator();
+  }
+
+  function updateSimulator() {
+    var base = state.result;
+    if (!base) return;
+    var sim = walkSim();
+    if (!sim) return;
+
+    var total = sim.total;
+    var delta = base.total - total;
+    var totalEl = $('#simTotal');
+    var deltaEl = $('#simDelta');
+    var gradeEl = $('#simGrade');
+    var barEl = $('#simBarFill');
+    var targetEl = $('#simTarget');
+
+    if (totalEl) totalEl.textContent = CF.tonsText(total, 2);
+
+    if (deltaEl) {
+      if (delta > 2) {
+        deltaEl.className = 'sim-delta down';
+        deltaEl.innerHTML = '比现在少 <b>' + CF.fmt(delta) + ' kg/年</b>（-' + pct(delta, base.total).toFixed(0) + '%）';
+      } else if (delta < -2) {
+        deltaEl.className = 'sim-delta up';
+        deltaEl.innerHTML = '比现在多 <b>' + CF.fmt(Math.abs(delta)) + ' kg/年</b>';
+      } else {
+        deltaEl.className = 'sim-delta flat';
+        deltaEl.textContent = '拖动左边滑块试试';
+      }
+    }
+
+    if (gradeEl) {
+      var g = sim.grade;
+      gradeEl.textContent = '等级 ' + g.grade + ' · ' + g.title;
+    }
+
+    if (barEl) {
+      var reduction = base.total > 0 ? Math.max(0, Math.min(100, (delta / base.total) * 100)) : 0;
+      barEl.style.width = reduction.toFixed(1) + '%';
+    }
+
+    if (targetEl) {
+      var gap = total - 2000;
+      targetEl.textContent = gap <= 0
+        ? '已经低于巴黎协定目标线（2.0 t）🎉'
+        : '距离巴黎协定目标线（2.0 t）还差 ' + CF.fmt(gap) + ' kg';
+    }
+  }
+
+  /* =======================================================
+     结果渲染总入口
+     ======================================================= */
+  function renderResult() {
+    var r = state.result;
+    if (!r) return;
+
+    var total = r.total;
+
+    var totalEl = $('#resTotal');
+    if (totalEl) totalEl.textContent = CF.tonsText(total, 2);
+    var kgEl = $('#resKg');
+    if (kgEl) kgEl.textContent = CF.fmt(total);
+    var dayEl = $('#resDay');
+    if (dayEl) dayEl.textContent = (total / 365).toFixed(1);
+
+    var badge = $('#resGrade');
+    if (badge) {
+      badge.textContent = r.grade.grade;
+      badge.style.setProperty('--g', r.grade.color);
+    }
+    var gradeTitle = $('#resGradeTitle');
+    if (gradeTitle) gradeTitle.textContent = r.grade.title;
+
+    var verdict = $('#resVerdict');
+    if (verdict) verdict.innerHTML = buildVerdict(r);
+
+    var equiv = $('#resEquiv');
+    if (equiv) equiv.innerHTML = buildEquiv(r);
+
+    renderBench(r);
+
+    var center = $('#donutCenter');
+    if (center) center.textContent = CF.tonsText(total, 2);
+    renderLegend(r);
+
+    if (CF.charts) {
+      CF.charts.donut($('#donutChart'), r.items, total);
+      CF.charts.bars($('#barChart'), buildBarRows(r));
+    }
+
+    var barNote = $('#barNote');
+    if (barNote) {
+      if (total <= 2000) {
+        barNote.textContent = '你已低于巴黎协定目标线，领先 ' + CF.fmt(2000 - total) + ' kg。';
+      } else {
+        barNote.textContent = '你的排放是巴黎目标的 ' + (total / 2000).toFixed(2) + ' 倍，每年还需再减 ' +
+          CF.fmt(total - 2000) + ' kg 才能达标。';
+      }
+    }
+
+    renderDetail(r);
+    renderSuggestions(r);
+    initSimulator(r);
+  }
+
+  /* 图表库晚到时就重绘一次（保证用的是 ECharts 而不是兜底图形） */
+  function refreshCharts() {
+    if (state.view !== 'result' || !state.result) return;
+    if (!CF.charts) return;
+    CF.charts.donut($('#donutChart'), state.result.items, state.result.total);
+    CF.charts.bars($('#barChart'), buildBarRows(state.result));
+    if (state.history.length) renderTrend();
+  }
+
+  /* =======================================================
+     历史记录
+     ======================================================= */
+  function loadHistory() {
+    try {
+      var raw = localStorage.getItem(STORE_KEY);
+      var arr = raw ? JSON.parse(raw) : [];
+      state.history = Array.isArray(arr) ? arr : [];
+    } catch (e) {
+      state.history = [];
+      state.storeOk = false;
+    }
+  }
+
+  function persistHistory() {
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify(state.history));
+      state.storeOk = true;
+    } catch (e) {
+      state.storeOk = false;
+    }
+  }
+
+  function dateText(ts) {
+    var d = new Date(ts);
+    if (isNaN(d.getTime())) return '—';
+    var mm = ('0' + (d.getMonth() + 1)).slice(-2);
+    var dd = ('0' + d.getDate()).slice(-2);
+    var hh = ('0' + d.getHours()).slice(-2);
+    var mi = ('0' + d.getMinutes()).slice(-2);
+    return mm + '-' + dd + ' ' + hh + ':' + mi;
+  }
+
+  function saveCurrent() {
+    if (!state.result) {
+      toast('还没有结果可以保存');
+      return;
+    }
+    var snap = CF.snapshot(state.result);
+    state.history.unshift(snap);
+    if (state.history.length > 30) state.history.length = 30;
+    persistHistory();
+    renderHistory();
+
+    if (state.storeOk) {
+      toast('已保存到历史记录（' + state.history.length + ' 条）');
+    } else {
+      toast('浏览器禁止了本地存储，记录只在本次会话有效');
+    }
+  }
+
+  function renderHistory() {
+    var list = $('#historyList');
+    var empty = $('#historyEmpty');
+    var trendCard = $('#trendCard');
+    if (!list) return;
+
+    if (!state.history.length) {
+      list.classList.add('is-hidden');
+      if (empty) empty.classList.remove('is-hidden');
+      if (trendCard) trendCard.classList.add('is-hidden');
+      return;
+    }
+
+    list.classList.remove('is-hidden');
+    if (empty) empty.classList.add('is-hidden');
+
+    list.innerHTML = state.history.map(function (item, index) {
+      var grade = CF.gradeOf(item.total);
+      return '<div class="hist-item">' +
+        '<div><p class="hist-date">' + dateText(item.ts) + '</p>' +
+        '<p class="hist-total">' + CF.tonsText(item.total, 2) + '<small>t</small></p></div>' +
+        '<div class="hist-side">' +
+        '<span class="hist-grade" style="background:' + grade.color + '">' + item.grade + '</span>' +
+        '<button class="hist-del" data-index="' + index + '" aria-label="删除这条记录">删除</button>' +
+        '</div>' +
+        '</div>';
+    }).join('');
+
+    $$('.hist-del', list).forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var idx = Number(btn.getAttribute('data-index'));
+        state.history.splice(idx, 1);
+        persistHistory();
+        renderHistory();
+        toast('已删除一条记录');
+      });
+    });
+
+    if (trendCard) trendCard.classList.remove('is-hidden');
+    renderTrend();
+  }
+
+  function renderTrend() {
+    var el = $('#trendChart');
+    if (!el) return;
+    var data = state.history.slice(0, 8).slice().reverse();
+    if (data.length < 2) {
+      el.innerHTML = '<p style="color:#94a3b8;font-size:.8rem;text-align:center;padding-top:40px">至少保存 2 次才能看趋势</p>';
+      return;
+    }
+    // 同一天存的记录，横轴改用「时:分:秒」，避免标签全变成同一个日期
+    var dayKeys = {};
+    data.forEach(function (d) { dayKeys[new Date(d.ts).toDateString()] = 1; });
+    var sameDay = Object.keys(dayKeys).length < data.length;
+
+    function pad2(n) { return ('0' + n).slice(-2); }
+
+    var labels = data.map(function (d) {
+      var t = new Date(d.ts);
+      if (!sameDay) return pad2(t.getMonth() + 1) + '-' + pad2(t.getDate());
+      return pad2(t.getHours()) + ':' + pad2(t.getMinutes()) + ':' + pad2(t.getSeconds());
+    });
+    var values = data.map(function (d) { return Number((d.total / 1000).toFixed(2)); });
+    if (CF.charts) CF.charts.line(el, labels, values);
+  }
+
+  function openDrawer() {
+    var drawer = $('#historyDrawer');
+    var backdrop = $('#drawerBackdrop');
+    if (!drawer) return;
+    renderHistory();
+    drawer.classList.add('is-open');
+    drawer.setAttribute('aria-hidden', 'false');
+    if (backdrop) backdrop.classList.add('is-open');
+  }
+
+  function closeDrawer() {
+    var drawer = $('#historyDrawer');
+    var backdrop = $('#drawerBackdrop');
+    if (!drawer) return;
+    drawer.classList.remove('is-open');
+    drawer.setAttribute('aria-hidden', 'true');
+    if (backdrop) backdrop.classList.remove('is-open');
+  }
+
+  /* =======================================================
+     分享卡片（Canvas）
+     ======================================================= */
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  function wrapText(ctx, text, x, y, maxWidth, lineHeight, maxLines) {
+    var line = '';
+    var lines = [];
+    for (var i = 0; i < text.length; i++) {
+      var test = line + text[i];
+      if (ctx.measureText(test).width > maxWidth && line) {
+        lines.push(line);
+        line = text[i];
+        if (lines.length === maxLines - 1) break;
+      } else {
+        line = test;
+      }
+    }
+    if (line) lines.push(line);
+    lines.forEach(function (t, i) { ctx.fillText(t, x, y + i * lineHeight); });
+  }
+
+  var FONT = '"PingFang SC","Microsoft YaHei","Hiragino Sans GB",system-ui,sans-serif';
+
+  function drawCard(r) {
+    var cv = $('#shareCanvas');
+    if (!cv) return;
+    var ctx = cv.getContext('2d');
+    var W = 720, H = 960;
+    ctx.setTransform(2, 0, 0, 2, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+
+    /* 背景 */
+    var g = ctx.createLinearGradient(0, 0, W, H);
+    g.addColorStop(0, '#04291f');
+    g.addColorStop(0.55, '#065f46');
+    g.addColorStop(1, '#0f766e');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.save();
+    ctx.globalAlpha = 0.10;
+    ctx.fillStyle = '#4ade80';
+    ctx.beginPath();
+    ctx.arc(640, 90, 190, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(60, 880, 150, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    /* 标题 */
+    ctx.fillStyle = 'rgba(255,255,255,.72)';
+    ctx.font = '600 20px ' + FONT;
+    ctx.fillText('我 的 年 度 碳 足 迹', 56, 92);
+
+    /* 大数字 */
+    var totalT = CF.tonsText(r.total, 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '800 132px ' + FONT;
+    ctx.fillText(totalT, 50, 236);
+    var numW = ctx.measureText(totalT).width;
+    ctx.fillStyle = 'rgba(255,255,255,.72)';
+    ctx.font = '600 26px ' + FONT;
+    ctx.fillText('吨 CO₂e / 年', 56 + numW + 12, 236);
+
+    /* 等级 */
+    ctx.save();
+    ctx.fillStyle = r.grade.color;
+    roundRect(ctx, 528, 136, 120, 120, 32);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = '800 54px ' + FONT;
+    ctx.textAlign = 'center';
+    ctx.fillText(r.grade.grade, 588, 214);
+    ctx.font = '600 18px ' + FONT;
+    ctx.fillStyle = 'rgba(255,255,255,.9)';
+    ctx.fillText(r.grade.title, 588, 296);
+    ctx.textAlign = 'left';
+    ctx.restore();
+
+    /* 评价 */
+    ctx.fillStyle = 'rgba(255,255,255,.86)';
+    ctx.font = '400 21px ' + FONT;
+    var line1 = '比全国人均低 ' + Math.max(0, (1 - r.total / 8000) * 100).toFixed(0) + '%';
+    var line2 = '比全球人均低 ' + Math.max(0, (1 - r.total / 4700) * 100).toFixed(0) + '%';
+    var line3 = r.total <= 2000 ? '已达巴黎协定目标线' : '巴黎目标的 ' + (r.total / 2000).toFixed(2) + ' 倍';
+    ctx.fillText(line1 + '  ·  ' + line2 + '  ·  ' + line3, 56, 340);
+
+    /* 分隔线 */
+    ctx.strokeStyle = 'rgba(255,255,255,.18)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(56, 372);
+    ctx.lineTo(W - 56, 372);
+    ctx.stroke();
+
+    /* 分项条形 */
+    var maxKg = r.items.reduce(function (m, it) { return Math.max(m, it.kg); }, 1);
+    r.items.forEach(function (it, i) {
+      var y = 420 + i * 74;
+      ctx.fillStyle = 'rgba(255,255,255,.82)';
+      ctx.font = '600 22px ' + FONT;
+      ctx.fillText(it.icon + ' ' + it.label, 56, y);
+      ctx.fillStyle = 'rgba(255,255,255,.16)';
+      roundRect(ctx, 176, y - 16, 380, 14, 7);
+      ctx.fill();
+      var w = Math.max(6, (it.kg / maxKg) * 380);
+      ctx.fillStyle = it.color;
+      roundRect(ctx, 176, y - 16, w, 14, 7);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '700 20px ' + FONT;
+      ctx.textAlign = 'right';
+      ctx.fillText(CF.tonsText(it.kg, 2) + ' t', W - 56, y);
+      ctx.textAlign = 'left';
+    });
+
+    /* 三条基准：分三列排，避免手动空格对齐 */
+    var bench = [['全国人均', '8.00 t'], ['全球人均', '4.70 t'], ['巴黎目标', '2.00 t']];
+    bench.forEach(function (b, i) {
+      var x = 56 + i * 212;
+      ctx.fillStyle = 'rgba(255,255,255,.55)';
+      ctx.font = '500 17px ' + FONT;
+      ctx.fillText(b[0], x, 726);
+      ctx.fillStyle = 'rgba(255,255,255,.95)';
+      ctx.font = '700 26px ' + FONT;
+      ctx.fillText(b[1], x, 760);
+    });
+
+    /* 页脚 */
+    ctx.strokeStyle = 'rgba(255,255,255,.14)';
+    ctx.beginPath();
+    ctx.moveTo(56, 800);
+    ctx.lineTo(W - 56, 800);
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(255,255,255,.9)';
+    ctx.font = '700 22px ' + FONT;
+    ctx.fillText('减排，从今天的一次选择开始。', 56, 848);
+
+    ctx.fillStyle = 'rgba(255,255,255,.5)';
+    ctx.font = '400 17px ' + FONT;
+    ctx.fillText('个人碳足迹计算器 · 排放因子法 · 数据只保存在你的浏览器', 56, 888);
+  }
+
+  function openCard() {
+    if (!state.result) {
+      toast('还没有结果可以生成卡片');
+      return;
+    }
+    drawCard(state.result);
+    var modal = $('#cardModal');
+    if (!modal) return;
+    modal.classList.add('is-open');
+    modal.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeCard() {
+    var modal = $('#cardModal');
+    if (!modal) return;
+    modal.classList.remove('is-open');
+    modal.setAttribute('aria-hidden', 'true');
+  }
+
+  function downloadCard() {
+    var cv = $('#shareCanvas');
+    if (!cv) return;
+
+    function trigger(url) {
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = '我的碳足迹卡片.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      if (url.indexOf('blob:') === 0) setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+      toast('卡片已开始下载');
+    }
+
+    if (typeof cv.toBlob === 'function') {
+      cv.toBlob(function (blob) {
+        if (!blob) { trigger(cv.toDataURL('image/png')); return; }
+        trigger(URL.createObjectURL(blob));
+      }, 'image/png');
+    } else {
+      trigger(cv.toDataURL('image/png'));
+    }
+  }
+
+  /* =======================================================
+     事件绑定 & 启动
+     ======================================================= */
+  function bindGlobal() {
+    $$('[data-nav]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        show(el.getAttribute('data-nav'));
+      });
+    });
+
+    var btnHistory = $('#btnHistory');
+    if (btnHistory) btnHistory.addEventListener('click', openDrawer);
+    var btnCloseDrawer = $('#btnCloseDrawer');
+    if (btnCloseDrawer) btnCloseDrawer.addEventListener('click', closeDrawer);
+    var backdrop = $('#drawerBackdrop');
+    if (backdrop) backdrop.addEventListener('click', closeDrawer);
+
+    var btnClear = $('#btnClearHistory');
+    if (btnClear) {
+      btnClear.addEventListener('click', function () {
+        if (!state.history.length) { toast('还没有记录'); return; }
+        state.history = [];
+        persistHistory();
+        renderHistory();
+        toast('已清空全部记录');
+      });
+    }
+
+    var btnSave = $('#btnSaveHistory');
+    if (btnSave) btnSave.addEventListener('click', saveCurrent);
+
+    var btnShare = $('#btnShare');
+    if (btnShare) btnShare.addEventListener('click', openCard);
+
+    var btnDownload = $('#btnDownloadCard');
+    if (btnDownload) btnDownload.addEventListener('click', downloadCard);
+
+    ['#btnCloseModal', '#btnCloseModal2'].forEach(function (sel) {
+      var el = $(sel);
+      if (el) el.addEventListener('click', closeCard);
+    });
+
+    var modal = $('#cardModal');
+    if (modal) {
+      modal.addEventListener('click', function (ev) {
+        if (ev.target === modal) closeCard();
+      });
+    }
+
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape') {
+        closeCard();
+        closeDrawer();
+      }
+    });
+  }
+
+  function init() {
+    if (!CF || !CF.compute) {
+      console.error('[碳足迹] 计算模块没有加载成功');
+      return;
+    }
+
+    loadHistory();
+    bindForm();
+    bindGlobal();
+    setElecMode('direct');
+    renderHistory();
+
+    if (CF.charts) {
+      CF.charts.ensureLib().then(function (ok) {
+        if (ok) refreshCharts();
+      });
+    }
+
+    show('home');
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+})();
+
+</script>
+</body>
+</html>

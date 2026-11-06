@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>表单状态条 · 效果演示</title>
+<style>
+  :root {
+    --c-primary: #059669;
+    --c-primary-dark: #047857;
+    --c-primary-soft: #ecfdf5;
+    --c-primary-line: #d1fae5;
+    --c-text: #0f172a;
+    --c-text-2: #334155;
+    --c-text-muted: #64748b;
+    --c-line: #e2e8f0;
+    --c-danger: #dc2626;
+    --c-warn: #f59e0b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f6faf8; color: var(--c-text); padding: 30px 20px 60px;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 20px; color: #064e3b; }
+  .sub { color: var(--c-text-muted); font-size: 13px; margin: 6px 0 20px; }
+  .card {
+    background: #fff; border: 1px solid var(--c-line); border-radius: 16px;
+    padding: 20px; margin-bottom: 16px;
+  }
+  .q { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .q-label { font-size: .88rem; font-weight: 600; color: var(--c-text-2); }
+  .slider-field {
+    display: flex; align-items: center; gap: 14px;
+    padding: 10px 14px; border: 1px solid var(--c-line); border-radius: 12px;
+    background: #fbfdfc;
+  }
+  .js-range { flex: 1; accent-color: var(--c-primary); }
+  .num-wrap { display: flex; align-items: center; gap: 6px; }
+  .js-num {
+    width: 84px; padding: 6px 10px; border: 1px solid var(--c-line); border-radius: 9px;
+    font: inherit; font-size: .94rem; text-align: right; background: #fff;
+  }
+  .js-num:focus { outline: none; border-color: var(--c-primary); box-shadow: 0 0 0 3px rgba(16,185,129,.14); }
+  .js-num.is-invalid { border-color: var(--c-danger); box-shadow: 0 0 0 3px rgba(220,38,38,.12); }
+  .unit { font-size: .76rem; color: var(--c-text-muted); }
+
+  /* ============ 状态条 ============ */
+  .form-status {
+    display: flex; align-items: flex-start; gap: 9px;
+    margin-top: 14px; padding: 10px 14px;
+    border-radius: 12px; font-size: .86rem; line-height: 1.45;
+    border: 1px solid transparent;
+    animation: fsIn .18s ease both;
+  }
+  .form-status.is-hidden { display: none; }
+  .form-status.is-error { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
+  .form-status.is-warn  { background: #fffbeb; border-color: #fde68a; color: #b45309; }
+  .form-status.is-ok    { background: var(--c-primary-soft); border-color: var(--c-primary-line); color: var(--c-primary-dark); }
+  .form-status .fs-icon {
+    flex: none; width: 18px; height: 18px; margin-top: 1px;
+    border-radius: 50%; display: grid; place-items: center;
+    font-size: 11px; font-weight: 800; color: #fff; line-height: 1;
+  }
+  .is-error .fs-icon { background: var(--c-danger); }
+  .is-warn .fs-icon { background: var(--c-warn); }
+  .is-ok .fs-icon { background: var(--c-primary); }
+  body.static .form-status { animation: none; }\n  @keyframes fsIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  button {
+    font: inherit; font-size: 13px; padding: 8px 16px; border-radius: 999px;
+    border: 1px solid var(--c-primary-line); background: var(--c-primary-soft);
+    color: var(--c-primary-dark); cursor: pointer;
+  }
+  button:hover { background: var(--c-primary-line); }
+  .note { font-size: 12.5px; color: var(--c-text-muted); margin-top: 12px; }
+  .note code { background: #f1f5f9; padding: 1px 5px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>表单状态条 · 效果演示</h1>
+  <p class="sub">这是给你看效果的独立页面，不影响项目源码。三种状态 + 真实的输入校验都在这一页。</p>
+
+  <div class="card">
+    <div class="q">
+      <label class="q-label" for="demoNum">每周通勤里程</label>
+      <div class="slider-field">
+        <input type="range" class="js-range" min="0" max="200" step="5" value="40" id="demoRange">
+        <div class="num-wrap">
+          <input type="number" class="js-num" id="demoNum" min="0" max="200" step="5" value="40">
+          <span class="unit">km / 周</span>
+        </div>
+      </div>
+      <p class="note">试试：输入 <code>9999</code> 后点别处（自动修正，黄色）；清空（红色）；正常输入（不提示）。</p>
+    </div>
+
+    <div class="form-status is-hidden" id="formStatus" role="status" aria-live="polite">
+      <span class="fs-icon" aria-hidden="true">!</span>
+      <span class="fs-text"></span>
+    </div>
+
+    <div class="actions" style="margin-top:16px">
+      <button type="button" data-demo="error">看错误态</button>
+      <button type="button" data-demo="warn">看修正态</button>
+      <button type="button" data-demo="ok">看正常态</button>
+      <button type="button" data-demo="hide">收起</button>
+    </div>
+  </div>
+
+  <div class="card" style="font-size:13px;color:#475569">
+    <b style="color:#0f172a">这三种状态分别什么时候用</b><br>
+    · <b style="color:#b91c1c">红色</b>：用户填的东西根本不能用（留空、不是数字、超出范围还没被修正）—— 要挡住提交、把光标放回出错的框<br>
+    · <b style="color:#b45309">黄色</b>：填得能用，但被系统自动改过（比如 9999 按 200 算）—— 告诉他改成了什么，别让他以为没生效<br>
+    · <b style="color:#047857">绿色</b>：操作成功了（恢复默认值、已保存）—— 也可以不用，改用右下角的 toast
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var statusEl = document.getElementById('formStatus');
+  var iconEl = statusEl.querySelector('.fs-icon');
+  var textEl = statusEl.querySelector('.fs-text');
+  var num = document.getElementById('demoNum');
+  var range = document.getElementById('demoRange');
+  var timer = null;
+
+  function hide() {
+    statusEl.className = 'form-status is-hidden';
+    num.classList.remove('is-invalid');
+    num.removeAttribute('aria-invalid');
+  }
+
+  function show(type, text, target) {
+    clearTimeout(timer);
+    statusEl.className = 'form-status is-' + type;
+    iconEl.textContent = (type === 'warn' || type === 'error') ? '!' : '✓';
+    textEl.textContent = text;
+    if (target && type === 'error') {      // 只有"真的错了"才标红框；被修正的不算错
+      target.classList.add('is-invalid');
+      target.setAttribute('aria-invalid', 'true');
+    }
+    timer = setTimeout(hide, 6000);
+  }
+
+  /* 数字框失焦：范围外就修正并提示，范围外且无法修正就报错 */
+  num.addEventListener('blur', function () {
+    var min = Number(num.min), max = Number(num.max);
+    var raw = num.value;
+    if (raw === '' || !isFinite(Number(raw))) {
+      show('error', '「每周通勤里程」不能为空，请填一个 0~200 之间的数字', num);
+      return;
+    }
+    var v = Number(raw);
+    if (v < min || v > max) {
+      var fixed = Math.min(max, Math.max(min, v));
+      num.value = fixed;
+      range.value = fixed;
+      show('warn', '「每周通勤里程」范围是 ' + min + '~' + max + '，已按 ' + fixed + ' 计算', num);
+      return;
+    }
+    num.classList.remove('is-invalid');
+    num.removeAttribute('aria-invalid');
+    if (statusEl.classList.contains('is-error')) hide();
+  });
+
+  num.addEventListener('input', function () {
+    range.value = num.value;
+    if (num.classList.contains('is-invalid') && num.value !== '') hide();
+  });
+
+  range.addEventListener('input', function () {
+    num.value = range.value;
+    hide();
+  });
+
+  document.querySelectorAll('[data-demo]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var kind = btn.getAttribute('data-demo');
+      if (kind === 'error') show('error', '「每周通勤里程」不能为空，请填一个 0~200 之间的数字', num);
+      else if (kind === 'warn') show('warn', '「每周通勤里程」范围是 0~200，已按 200 计算', num);
+      else if (kind === 'ok') show('ok', '已恢复默认值');
+      else hide();
+    });
+  });
+
+  /* 截图用：#error / #warn / #ok 直接展示对应状态 */
+  if (location.hash) document.body.classList.add('static');
+  if (location.hash === '#error') show('error', '「每周通勤里程」不能为空，请填一个 0~200 之间的数字', num);
+  if (location.hash === '#warn') show('warn', '「每周通勤里程」范围是 0~200，已按 200 计算', num);
+  if (location.hash === '#ok') show('ok', '已恢复默认值');
+})();
+</script>
+</body>
+</html>

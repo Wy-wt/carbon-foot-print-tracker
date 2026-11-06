@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>个人碳足迹计算器 · 算出你一年的碳排放</title>
+<meta name="description" content="用排放因子法算出你一年的碳足迹，和全国人均、全球人均、巴黎协定目标比一比，并给出可执行的减排建议。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%B1%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <button class="brand" data-nav="home" aria-label="返回首页">
+      <span class="brand-mark" aria-hidden="true">🌱</span>
+      <span class="brand-text">碳足迹计算器</span>
+    </button>
+    <nav class="topnav" aria-label="主导航">
+      <button class="nav-btn is-active" data-nav="home">首页</button>
+      <button class="nav-btn" data-nav="form">开始计算</button>
+      <button class="nav-btn" id="btnHistory">历史记录</button>
+    </nav>
+  </header>
+
+  <main id="main">
+
+    <!-- ============================ 首页 ============================ -->
+    <section class="view is-active" id="view-home">
+      <div class="hero">
+        <span class="pill">🌍 中国居民生活消费相关碳排放约占全国总量的 <b>30%</b> 左右</span>
+        <h1>你一年，排了多少碳？</h1>
+        <p class="hero-sub">5 分钟、4 类问题，算清你自己的年度碳足迹 —— 再顺手把它降下来。</p>
+        <div class="hero-actions">
+          <button class="btn btn-primary btn-lg" data-nav="form">开始计算 →</button>
+          <a class="btn btn-ghost btn-lg" href="#method">看看怎么算的</a>
+        </div>
+        <div class="hero-stats">
+          <div class="stat">
+            <span class="stat-num">8.0 <small>t</small></span>
+            <span class="stat-label">全国人均排放 / 年</span>
+          </div>
+          <div class="stat">
+            <span class="stat-num">4.7 <small>t</small></span>
+            <span class="stat-label">全球人均排放 / 年</span>
+          </div>
+          <div class="stat">
+            <span class="stat-num accent">2.0 <small>t</small></span>
+            <span class="stat-label">巴黎协定 1.5℃ 目标 / 人</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="steps">
+        <div class="step-card">
+          <span class="step-index">01</span>
+          <h3>录入 4 类活动</h3>
+          <p>出行、用电、饮食、日常消费，每类 2~3 个问题，不用翻电费单也能填。</p>
+        </div>
+        <div class="step-card">
+          <span class="step-index">02</span>
+          <h3>按系数换算</h3>
+          <p>总排放 = Σ（活动量 × 排放系数），所有系数公开可查，页面上就能看到。</p>
+        </div>
+        <div class="step-card">
+          <span class="step-index">03</span>
+          <h3>看排名、拿方案</h3>
+          <p>分项占比、基准线对比、等级勋章，还有按你的数据动态生成的减排清单。</p>
+        </div>
+      </div>
+
+      <section class="method" id="method">
+        <div class="section-head">
+          <h2>算法说明：排放因子法</h2>
+          <p>核心公式只有一行，参数全部来自公开研究，评委可以逐项核对。</p>
+        </div>
+
+        <div class="formula">
+          <span class="formula-main">总排放&nbsp;=&nbsp;Σ（活动量<sub>i</sub> × 排放系数<sub>i</sub>）</span>
+          <span class="formula-note">人均用电 &nbsp;=&nbsp; 家庭月用电 × 12 ÷ 家庭人口</span>
+        </div>
+
+        <div class="table-wrap">
+          <table class="factor-table">
+            <caption>输入项 — 系数 — 依据（kg CO₂e）</caption>
+            <thead>
+              <tr><th>类别</th><th>输入项</th><th>单位</th><th>排放系数</th><th>依据 / 说明</th></tr>
+            </thead>
+            <tbody>
+              <tr><th rowspan="6">出行</th><td>燃油私家车</td><td>km</td><td class="num">0.20</td><td>百公里油耗约 7 L，汽油 2.3 kg CO₂/L</td></tr>
+              <tr><td>新能源私家车</td><td>km</td><td class="num">0.10</td><td>百公里电耗 17 kWh × 电网因子 0.5703</td></tr>
+              <tr><td>打车 / 网约车</td><td>km</td><td class="num">0.16</td><td>含空驶与调度，略低于私家车</td></tr>
+              <tr><td>公交 / 地铁</td><td>人·km</td><td class="num">0.045 / 0.032</td><td>城市客运平均载客率折算</td></tr>
+              <tr><td>电动自行车</td><td>km</td><td class="num">0.007</td><td>百公里电耗约 1.2 kWh</td></tr>
+              <tr><td>步行 / 骑行</td><td>km</td><td class="num">0</td><td>不计入直接排放</td></tr>
+              <tr><th rowspan="2">用电</th><td>家庭用电</td><td>kWh</td><td class="num">0.5703</td><td>全国电网平均 CO₂ 排放因子</td></tr>
+              <tr><td>按人数估算</td><td>户</td><td class="num">68~120 kWh/人·月</td><td>1~6 人户阶梯估算，人越多人均越低</td></tr>
+              <tr><th rowspan="3">饮食</th><td>红肉</td><td>次</td><td class="num">2.0</td><td>每次 150 g，混合红肉 13.3 kg CO₂/kg（牛 27、猪 6、羊 20）</td></tr>
+              <tr><td>外卖</td><td>次</td><td class="num">0.45</td><td>餐盒、包装、配送与额外食物浪费</td></tr>
+              <tr><td>基础饮食</td><td>年</td><td class="num">560 / 700 / 950</td><td>以植物为主 / 荤素均衡 / 以肉为主</td></tr>
+              <tr><th rowspan="2">消费</th><td>衣物</td><td>元/年</td><td class="num">0.06</td><td>纺织服装按消费额折算（含生产与运输）</td></tr>
+              <tr><td>电子产品</td><td>元/年</td><td class="num">0.04</td><td>按消费额折算（含生产制造）</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="bench-note">
+          <div class="bench-item"><b>8.0 t</b><span>全国人均：中国能源相关 CO₂ 人均排放约 8 吨 / 年</span></div>
+          <div class="bench-item"><b>4.7 t</b><span>全球人均：全球平均约 4.7 吨 / 年</span></div>
+          <div class="bench-item"><b>2.0 t</b><span>巴黎协定：1.5℃ 情景下 2050 年人均需降至 2 吨以内</span></div>
+        </div>
+
+        <p class="disclaimer">
+          口径说明：本工具只统计<b>居民生活消费</b>直接相关的四类活动，不含公共服务、政府支出与工业中间投入，
+          因此结果通常低于「全国人均」这类全口径数据；比较时请把它理解为「你的生活方式的相对水平」。系数取整后用于科普演示，不作为碳核算依据。
+        </p>
+      </section>
+    </section>
+
+    <!-- ============================ 输入页 ============================ -->
+    <section class="view" id="view-form">
+      <div class="form-head">
+        <h2>花 2 分钟填一下</h2>
+        <p>不确定的地方按你的感觉填就行，后面可以随时回来改。所有数据只存在你自己的浏览器里。</p>
+      </div>
+
+      <form id="cfForm" autocomplete="off" novalidate>
+        <div class="form-grid">
+
+          <!-- 出行 -->
+          <section class="cat-card" data-cat="transport">
+            <div class="cat-head">
+              <span class="cat-icon" aria-hidden="true">🚇</span>
+              <div>
+                <h3>出行</h3>
+                <p>通勤方式决定了大头</p>
+              </div>
+            </div>
+
+            <div class="q">
+              <label class="q-label">你最常怎么通勤？</label>
+              <div class="choices" role="radiogroup" aria-label="通勤方式">
+                <label class="choice"><input type="radio" name="mode" value="walk"><span>🚶<i>步行/骑行</i></span></label>
+                <label class="choice"><input type="radio" name="mode" value="ebike"><span>🛵<i>电动自行车</i></span></label>
+                <label class="choice"><input type="radio" name="mode" value="metro" checked><span>🚇<i>地铁</i></span></label>
+                <label class="choice"><input type="radio" name="mode" value="bus"><span>🚌<i>公交</i></span></label>
+                <label class="choice"><input type="radio" name="mode" value="car"><span>🚗<i>燃油私家车</i></span></label>
+                <label class="choice"><input type="radio" name="mode" value="ev"><span>🔌<i>新能源车</i></span></label>
+                <label class="choice"><input type="radio" name="mode" value="taxi"><span>🚕<i>打车</i></span></label>
+              </div>
+            </div>
+
+            <div class="q">
+              <label class="q-label" for="commuteKmNum">每周通勤里程</label>
+              <div class="slider-field" data-key="commuteKm">
+                <input type="range" class="js-range" min="0" max="200" step="5" value="40" aria-label="每周通勤里程">
+                <div class="num-wrap">
+                  <input type="number" class="js-num" id="commuteKmNum" min="0" max="200" step="5" value="40">
+                  <span class="unit">km / 周</span>
+                </div>
+              </div>
+              <p class="hint">通勤单程 10 km、一周 5 天 ≈ 100 km/周</p>
+            </div>
+
+            <div class="q">
+              <label class="q-label" for="otherKmNum">每周其他出行里程</label>
+              <div class="slider-field" data-key="otherKm">
+                <input type="range" class="js-range" min="0" max="200" step="5" value="20" aria-label="每周其他出行里程">
+                <div class="num-wrap">
+                  <input type="number" class="js-num" id="otherKmNum" min="0" max="200" step="5" value="20">
+                  <span class="unit">km / 周</span>
+                </div>
+              </div>
+              <p class="hint">逛街、周末出门等，按同样的方式折算</p>
+            </div>
+          </section>
+
+          <!-- 用电 -->
+          <section class="cat-card" data-cat="elec">
+            <div class="cat-head">
+              <span class="cat-icon" aria-hidden="true">💡</span>
+              <div>
+                <h3>用电</h3>
+                <p>空调和热水器是大户</p>
+              </div>
+            </div>
+
+            <div class="q">
+              <label class="q-label">家用怎么算？</label>
+              <div class="segmented" role="tablist" aria-label="用电量录入方式">
+                <button type="button" class="seg is-active" data-elecmode="direct" role="tab" aria-selected="true">填月用电量</button>
+                <button type="button" class="seg" data-elecmode="estimate" role="tab" aria-selected="false">按人数估算</button>
+              </div>
+            </div>
+
+            <div class="q" id="kwhDirectWrap">
+              <label class="q-label" for="monthlyKwhNum">家庭每月用电量</label>
+              <div class="slider-field" data-key="monthlyKwh">
+                <input type="range" class="js-range" min="30" max="800" step="10" value="240" aria-label="家庭每月用电量">
+                <div class="num-wrap">
+                  <input type="number" class="js-num" id="monthlyKwhNum" min="30" max="800" step="10" value="240">
+                  <span class="unit">度 / 月</span>
+                </div>
+              </div>
+              <p class="hint">电费单上看「本期用电量」，或用 电费 ÷ 电价 估一下</p>
+            </div>
+
+            <div class="q is-hidden" id="kwhEstimateWrap">
+              <p class="estimate-box" id="estBox">按 3 人家庭估算：约 276 度 / 月</p>
+              <p class="hint">上方的家庭人口会一起影响估算结果</p>
+            </div>
+
+            <div class="q">
+              <label class="q-label" for="householdNum">家庭人口</label>
+              <div class="slider-field" data-key="household">
+                <input type="range" class="js-range" min="1" max="6" step="1" value="3" aria-label="家庭人口">
+                <div class="num-wrap">
+                  <input type="number" class="js-num" id="householdNum" min="1" max="6" step="1" value="3">
+                  <span class="unit">人</span>
+                </div>
+              </div>
+              <p class="hint">家庭用电按人数平摊到你身上</p>
+            </div>
+          </section>
+
+          <!-- 饮食 -->
+          <section class="cat-card" data-cat="food">
+            <div class="cat-head">
+              <span class="cat-icon" aria-hidden="true">🍚</span>
+              <div>
+                <h3>饮食</h3>
+                <p>红肉和外卖是关键词</p>
+              </div>
+            </div>
+
+            <div class="q">
+              <label class="q-label" for="redMeatNum">每周吃红肉（猪牛羊）的次数</label>
+              <div class="slider-field" data-key="redMeat">
+                <input type="range" class="js-range" min="0" max="14" step="1" value="4" aria-label="每周红肉次数">
+                <div class="num-wrap">
+                  <input type="number" class="js-num" id="redMeatNum" min="0" max="14" step="1" value="4">
+                  <span class="unit">次 / 周</span>
+                </div>
+              </div>
+              <p class="hint">按每次 150 g 计，一口肉也算一次</p>
+            </div>
+
+            <div class="q">
+              <label class="q-label" for="takeoutNum">每周点外卖的次数</label>
+              <div class="slider-field" data-key="takeout">
+                <input type="range" class="js-range" min="0" max="21" step="1" value="3" aria-label="每周外卖次数">
+                <div class="num-wrap">
+                  <input type="number" class="js-num" id="takeoutNum" min="0" max="21" step="1" value="3">
+                  <span class="unit">次 / 周</span>
+                </div>
+              </div>
+              <p class="hint">含早餐、奶茶的打包外带</p>
+            </div>
+
+            <div class="q">
+              <label class="q-label">你的饮食倾向</label>
+              <div class="choices choices-3">
+                <label class="choice"><input type="radio" name="diet" value="plant"><span>🥬<i>以植物为主</i></span></label>
+                <label class="choice"><input type="radio" name="diet" value="balanced" checked><span>🍱<i>荤素均衡</i></span></label>
+                <label class="choice"><input type="radio" name="diet" value="meat"><span>🥩<i>以肉为主</i></span></label>
+              </div>
+            </div>
+          </section>
+
+          <!-- 消费 -->
+          <section class="cat-card" data-cat="consume">
+            <div class="cat-head">
+              <span class="cat-icon" aria-hidden="true">🛍️</span>
+              <div>
+                <h3>日常消费</h3>
+                <p>可选，不填按 0 计算</p>
+              </div>
+            </div>
+
+            <div class="q">
+              <label class="q-label" for="clothingNum">每年买衣物的大概花费</label>
+              <div class="slider-field" data-key="clothing">
+                <input type="range" class="js-range" min="0" max="20000" step="500" value="3000" aria-label="每年衣物花费">
+                <div class="num-wrap">
+                  <input type="number" class="js-num" id="clothingNum" min="0" max="20000" step="500" value="3000">
+                  <span class="unit">元 / 年</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="q">
+              <label class="q-label" for="electronicsNum">每年买电子产品的大概花费</label>
+              <div class="slider-field" data-key="electronics">
+                <input type="range" class="js-range" min="0" max="30000" step="500" value="2000" aria-label="每年电子产品花费">
+                <div class="num-wrap">
+                  <input type="number" class="js-num" id="electronicsNum" min="0" max="30000" step="500" value="2000">
+                  <span class="unit">元 / 年</span>
+                </div>
+              </div>
+              <p class="hint">手机、电脑、耳机……换得越勤，碳越高</p>
+            </div>
+          </section>
+
+        </div>
+
+        <!-- 表单状态条：默认隐藏，由 app.js 的 showStatus() 控制 -->
+        <div class="form-status is-hidden" id="formStatus" role="status" aria-live="polite">
+          <span class="fs-icon" aria-hidden="true">!</span>
+          <span class="fs-text"></span>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary btn-lg" id="btnCalc">计算我的碳足迹</button>
+          <button type="reset" class="btn btn-ghost" id="btnReset">恢复默认值</button>
+          <span class="form-note" id="formNote">数据只保存在本机浏览器</span>
+        </div>
+      </form>
+    </section>
+
+    <!-- ============================ 结果页 ============================ -->
+    <section class="view" id="view-result">
+      <div class="card result-hero">
+        <div class="result-hero-top">
+          <div>
+            <p class="eyebrow">你的年度碳足迹</p>
+            <div class="big-number"><span id="resTotal">0.00</span><span class="unit">吨 CO₂e</span></div>
+            <p class="big-sub">折合 <b id="resKg">0</b> kg CO₂e，平均每天 <b id="resDay">0</b> kg</p>
+          </div>
+          <div class="grade-box">
+            <div class="grade-badge" id="resGrade">A</div>
+            <p class="grade-title" id="resGradeTitle">低碳生活家</p>
+          </div>
+        </div>
+        <p class="verdict" id="resVerdict"></p>
+        <div class="equiv" id="resEquiv"></div>
+        <div class="result-actions">
+          <button class="btn btn-primary" id="btnSaveHistory">保存这次结果</button>
+          <button class="btn btn-light" id="btnShare">生成分享卡片</button>
+          <button class="btn btn-ghost" data-nav="form">回去改数据</button>
+        </div>
+      </div>
+
+      <div class="bench-grid" id="benchGrid"></div>
+
+      <div class="chart-grid">
+        <div class="card">
+          <h3 class="card-title">分项占比</h3>
+          <div class="donut-wrap">
+            <div class="chart" id="donutChart"></div>
+            <div class="donut-center"><span id="donutCenter">0.00</span><small>吨 / 年</small></div>
+          </div>
+          <ul class="legend" id="donutLegend"></ul>
+        </div>
+        <div class="card">
+          <h3 class="card-title">和三条基准线比一比</h3>
+          <div class="chart chart-bar" id="barChart"></div>
+          <p class="chart-note" id="barNote"></p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 class="card-title">明细拆解</h3>
+        <div class="table-wrap">
+          <table class="detail-table">
+            <thead><tr><th>项目</th><th>活动量</th><th class="num">排放 (kg)</th><th>占比</th></tr></thead>
+            <tbody id="detailBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card sugs">
+        <h3 class="card-title">给你的减排建议</h3>
+        <p class="card-sub" id="sugSummary"></p>
+        <ol class="sug-list" id="sugList"></ol>
+      </div>
+
+      <div class="card sim">
+        <h3 class="card-title">减排模拟器</h3>
+        <p class="card-sub">拖动滑块，实时看看改变习惯能把排放降到多少</p>
+        <div class="sim-body">
+          <div class="sim-controls" id="simControls"></div>
+          <div class="sim-result">
+            <p class="sim-label">模拟后的年排放</p>
+            <div class="sim-number"><span id="simTotal">0.00</span><small>t</small></div>
+            <p class="sim-delta" id="simDelta"></p>
+            <p class="sim-grade" id="simGrade"></p>
+            <div class="sim-bar"><div class="sim-bar-fill" id="simBarFill"></div></div>
+            <p class="sim-target" id="simTarget"></p>
+            <button class="btn btn-light btn-sm" id="btnSimReset">重置模拟</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <p>个人碳足迹计算器 · 排放因子法 · 数据来自公开研究与全国电网平均排放因子</p>
+    <p class="footer-dim">结果用于科普与自我对比，不作为碳核算或交易依据。</p>
+  </footer>
+</div>
+
+<!-- 历史记录抽屉 -->
+<div class="drawer-backdrop" id="drawerBackdrop"></div>
+<aside class="drawer" id="historyDrawer" aria-hidden="true" aria-label="历史记录">
+  <div class="drawer-head">
+    <h3>历史记录</h3>
+    <button class="icon-btn" id="btnCloseDrawer" aria-label="关闭">✕</button>
+  </div>
+  <div class="drawer-body">
+    <div class="history-empty" id="historyEmpty">
+      <p>还没有记录。</p>
+      <p class="dim">算完一次后点「保存这次结果」，就能在这里看趋势。</p>
+    </div>
+    <div class="history-list is-hidden" id="historyList"></div>
+    <div class="card mini is-hidden" id="trendCard">
+      <h4>排放趋势</h4>
+      <div class="chart chart-line" id="trendChart"></div>
+    </div>
+  </div>
+  <div class="drawer-foot">
+    <button class="btn btn-ghost btn-sm" id="btnClearHistory">清空全部记录</button>
+  </div>
+</aside>
+
+<!-- 分享卡片 -->
+<div class="modal" id="cardModal" aria-hidden="true">
+  <div class="modal-panel">
+    <div class="modal-head">
+      <h3>分享卡片</h3>
+      <button class="icon-btn" id="btnCloseModal" aria-label="关闭">✕</button>
+    </div>
+    <div class="card-preview">
+      <canvas id="shareCanvas" width="1440" height="1920"></canvas>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-primary" id="btnDownloadCard">下载 PNG</button>
+      <button class="btn btn-ghost" id="btnCloseModal2">关闭</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="assets/js/factors.js"></script>
+<script src="assets/js/engine.js"></script>
+<script src="assets/js/charts.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>

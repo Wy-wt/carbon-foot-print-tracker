@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>碳足迹计算器 · 进程与分工流程图</title>
+<style>
+  @page { size: A4 landscape; margin: 0; }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #0f172a;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .page {
+    width: 297mm;
+    height: 210mm;
+    padding: 11mm 12mm 9mm;
+    background: #fff;
+    position: relative;
+    overflow: hidden;
+    page-break-after: always;
+  }
+  .page:last-child { page-break-after: auto; }
+
+  /* ---------- 页头 ---------- */
+  .head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 5mm; }
+  h1 { font-size: 23pt; letter-spacing: -.02em; color: #064e3b; }
+  .head .sub { font-size: 10pt; color: #64748b; }
+  .head .tag {
+    margin-left: auto; font-size: 9pt; color: #047857;
+    border: 1px solid #a7f3d0; background: #ecfdf5;
+    padding: 3px 11px; border-radius: 99px;
+  }
+
+  /* ---------- 泳道表 ---------- */
+  .board {
+    display: grid;
+    grid-template-columns: 41mm repeat(5, 1fr);
+    gap: 2.2mm;
+  }
+
+  .corner, .week, .lane-label, .cell { border-radius: 2.4mm; }
+
+  .week {
+    background: #064e3b; color: #fff;
+    padding: 3mm 3.4mm;
+    min-height: 19mm;
+  }
+  .week b { display: block; font-size: 11.5pt; letter-spacing: .02em; }
+  .week span { display: block; font-size: 8.2pt; color: #a7f3d0; margin-top: 1mm; }
+
+  .week.w5 { background: #065f46; }
+
+  .lane-label {
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 3mm 3.4mm; border-left: 3.6mm solid #cbd5e1;
+    background: #f8fafc; border: 1px solid #e2e8f0; border-left-width: 3.6mm;
+  }
+  .lane-label b { font-size: 11.5pt; }
+  .lane-label span { font-size: 8.2pt; color: #64748b; margin-top: .8mm; }
+
+  .lane-a .lane-label { border-left-color: #0ea5e9; background: #f0f9ff; }
+  .lane-b .lane-label { border-left-color: #16a34a; background: #f0fdf4; }
+  .lane-c .lane-label { border-left-color: #f59e0b; background: #fffbeb; }
+  .lane-d .lane-label { border-left-color: #a855f7; background: #faf5ff; }
+  .lane-all .lane-label { border-left-color: #64748b; background: #f8fafc; }
+
+  .cell {
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    padding: 3mm 3.4mm;
+    font-size: 9.2pt;
+    line-height: 1.4;
+    min-height: 24mm;
+    position: relative;
+  }
+  .cell b { display: block; font-size: 10pt; margin-bottom: 1.2mm; }
+  .cell small { color: #64748b; font-size: 8.2pt; }
+  .cell .done { color: #059669; font-weight: 700; }
+
+  .cell.key { border-color: #a7f3d0; background: #f7fdfa; }
+  .cell.hot { border-color: #fcd34d; background: #fffdf5; }
+
+  .lane-all .cell { background: #f8fafc; color: #475569; min-height: 17mm; padding: 2.4mm 3.4mm; }
+
+  /* 行间箭头 */
+  .cell:not(:last-child)::after {
+    content: "\203A";
+    position: absolute; right: -2.05mm; top: 50%;
+    transform: translateY(-50%);
+    font-size: 12pt; line-height: 1; color: #94a3b8;
+  }
+
+  /* ---------- 页脚说明 ---------- */
+  .legend {
+    display: flex; gap: 6mm; align-items: center;
+    margin-top: 5mm; font-size: 8.6pt; color: #64748b;
+    border-top: 1px dashed #e2e8f0; padding-top: 2.6mm;
+  }
+  .legend i { font-style: normal; display: inline-flex; align-items: center; gap: 1.6mm; }
+  .legend i.note-only::before { display: none; }
+  .legend.plain-legend i::before { display: none; }
+  .legend i::before {
+    content: ""; width: 3.6mm; height: 3.6mm; border-radius: 1.2mm;
+    border: 1px solid #e2e8f0; background: #fff;
+  }
+  .legend .k::before { background: #f7fdfa; border-color: #a7f3d0; }
+  .legend .h::before { background: #fffdf5; border-color: #fcd34d; }
+
+  /* ---------- 第二页：发布闭环 ---------- */
+  .flow { display: flex; align-items: stretch; gap: 0; margin-top: 4mm; }
+  .step {
+    flex: 1; border: 1.2px solid #dbe6e1; border-radius: 3mm;
+    background: #fff; padding: 4.5mm 4mm 5mm; position: relative;
+  }
+  .step .n {
+    display: inline-grid; place-items: center;
+    width: 8mm; height: 8mm; border-radius: 50%;
+    background: #059669; color: #fff; font-size: 10pt; font-weight: 700;
+    margin-bottom: 2.2mm;
+  }
+  .step b { display: block; font-size: 11.5pt; margin-bottom: 1.6mm; }
+  .step p { font-size: 8.8pt; color: #475569; line-height: 1.5; }
+  .step .who {
+    display: inline-block; margin-top: 2.6mm; font-size: 8pt; font-weight: 700;
+    color: #047857; background: #ecfdf5; border: 1px solid #d1fae5;
+    padding: .6mm 2mm; border-radius: 99px;
+  }
+  .step.s-gate { border-color: #a7f3d0; background: #f7fdfa; }
+
+  .arrow {
+    width: 9mm; display: grid; place-items: center; color: #94a3b8; font-size: 16pt;
+  }
+
+  .rollback {
+    margin-top: 5mm; display: flex; align-items: center; gap: 4mm;
+    border: 1.2px dashed #fca5a5; background: #fff7f7; border-radius: 3mm;
+    padding: 3.6mm 5mm;
+  }
+  .rollback b { color: #b91c1c; font-size: 10pt; white-space: nowrap; }
+  .rollback span { font-size: 8.8pt; color: #7f1d1d; }
+
+  .parallel { margin-top: 6mm; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4mm; }
+  .pbox {
+    border: 1px solid #e2e8f0; border-radius: 3mm; padding: 4mm 4.5mm;
+    background: #fbfdfc;
+  }
+  .pbox b { font-size: 10pt; display: block; margin-bottom: 1.6mm; }
+  .pbox p { font-size: 8.8pt; color: #475569; line-height: 1.5; }
+  .pbox .who { font-size: 8.2pt; color: #047857; font-weight: 700; }
+
+  .blockers {
+    margin-top: 6mm; border: 1px solid #e2e8f0; border-radius: 3mm;
+    background: #f8fafc; padding: 4mm 5mm 4.4mm;
+  }
+  .blockers > b { display: block; font-size: 9.6pt; color: #334155; margin-bottom: 2.4mm; }
+  .bl { display: flex; align-items: baseline; gap: 4mm; font-size: 8.4pt; color: #475569; padding: .9mm 0; }
+  .bl span { white-space: nowrap; font-weight: 600; color: #0f172a; }
+  .bl em { font-style: normal; color: #64748b; }
+
+  .foot {
+    position: absolute; left: 12mm; right: 12mm; bottom: 5mm;
+    display: flex; justify-content: space-between;
+    font-size: 7pt; color: #94a3b8;
+    border-top: 1px solid #eef2f0; padding-top: 2mm;
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== 第 1 页：五周进程泳道 ==================== -->
+<div class="page">
+  <div class="head">
+    <h1>碳足迹计算器 · 进程与分工</h1>
+    <div class="sub">5 周 · 4 组 · 9 人　　每周一格，箭头表示“这周产出交给下一环”</div>
+    <div class="tag">第 1 页 / 共 2 页</div>
+  </div>
+
+  <div class="board">
+    <!-- 表头 -->
+    <div class="corner"></div>
+    <div class="week"><b>W1 定标准</b><span>把规矩和接口定死</span></div>
+    <div class="week"><b>W2 核验</b><span>数字与样式定稿</span></div>
+    <div class="week"><b>W3 加功能</b><span>最关键的一周</span></div>
+    <div class="week"><b>W4 打磨</b><span>走查与测试</span></div>
+    <div class="week w5"><b>W5 收口</b><span>冻结代码、出材料</span></div>
+
+    <!-- 全员 -->
+    <div class="lane-all lane-label"><b>全员</b><span>共同遵守</span></div>
+    <div class="cell">开工定需求<br><small>接口与字段名定死</small></div>
+    <div class="cell">每周站会 30 分钟<br><small>做完什么 / 卡在哪</small></div>
+    <div class="cell">联调周<br><small>各组对接，C2 主持合并</small></div>
+    <div class="cell">第一次完整走查<br><small>全站找问题</small></div>
+    <div class="cell">冻结代码<br><small>只修致命 bug</small></div>
+
+    <!-- A 组 -->
+    <div class="lane-a lane-label"><b>A 前端 2人</b><span>页面与样式</span></div>
+    <div class="cell">盘页面缺口<br><small>列出缺哪些区块</small></div>
+    <div class="cell">设计令牌<br><small class="done">tokens.css 定稿</small></div>
+    <div class="cell key">向导式流程<br><small>四步走 + 键盘可用</small></div>
+    <div class="cell">走查表逐条改<br><small>手机端、对比度</small></div>
+    <div class="cell">配合演示<br><small>改最后一处 bug</small></div>
+
+    <!-- B 组 -->
+    <div class="lane-b lane-label"><b>B 数据 2人</b><span>数字与建议</span></div>
+    <div class="cell">因子台账开建<br><small>先查 5 个关键系数</small></div>
+    <div class="cell">12 项系数定稿<br><small class="done">每个都有出处</small></div>
+    <div class="cell">规则表 + 数据<br><small>给 C 组备新功能数据</small></div>
+    <div class="cell">边界复查<br><small>手算对照 3 组</small></div>
+    <div class="cell hot">答辩答数据<br><small>“这个数哪来的”</small></div>
+
+    <!-- C 组 -->
+    <div class="lane-c lane-label"><b>C 图表 2人</b><span>画图 + 发布</span></div>
+    <div class="cell">建仓库<br><small class="done">部署链路跑通</small></div>
+    <div class="cell">图表配色统一<br><small>跟 A2 的清单一致</small></div>
+    <div class="cell key">减排路径图<br><small>三端适配</small></div>
+    <div class="cell hot">上线检查单全过<br><small>七个地址都 200</small></div>
+    <div class="cell">保线上可用<br><small>留回滚包 + 二维码</small></div>
+
+    <!-- D 组 -->
+    <div class="lane-d lane-label"><b>D 文档 3人</b><span>写稿 + 答辩</span></div>
+    <div class="cell">文档骨架<br><small>+ 竞品对比表</small></div>
+    <div class="cell">需求 + 概要<br><small>把功能说清楚</small></div>
+    <div class="cell">详细设计<br><small>+ 测试用例表</small></div>
+    <div class="cell">执行测试<br><small>找同学试用</small></div>
+    <div class="cell hot">视频 + PPT<br><small>提交包</small></div>
+  </div>
+
+  <div class="legend">
+    <i class="k">关键节点</i>
+    <i class="h">对外成果（上线 / 答辩材料）</i>
+    <i class="note-only">每周格子里的粗体是“这周必须交出”的东西</i>
+    <i class="note-only" style="margin-left:auto">详细任务见《任务详解》、每人清单见《任务卡》</i>
+  </div>
+
+  <div class="foot">
+    <span>碳足迹计算器 · 进程与分工</span>
+    <span>第 1 页</span>
+  </div>
+</div>
+
+<!-- ==================== 第 2 页：一次发布闭环 ==================== -->
+<div class="page">
+  <div class="head">
+    <h1>一次改动，怎么变成“上线的一版”</h1>
+    <div class="sub">每组都往这条流水线上交货；C2 是闸门，D2 是记录员</div>
+    <div class="tag">第 2 页 / 共 2 页</div>
+  </div>
+
+  <div class="flow">
+    <div class="step">
+      <div class="n">1</div>
+      <b>有人改了东西</b>
+      <p>页面、样式、图表、系数——任何一处改动，先在自己的分支上做。</p>
+      <span class="who">A / B / C 组</span>
+    </div>
+    <div class="arrow">→</div>
+
+    <div class="step s-gate">
+      <div class="n">2</div>
+      <b>跑自动检查</b>
+      <p>一条命令 1 秒出结果。红了不许往下走，谁改红的谁修。</p>
+      <span class="who">B1 跑 · D2 可双击网页版</span>
+    </div>
+    <div class="arrow">→</div>
+
+    <div class="step s-gate">
+      <div class="n">3</div>
+      <b>合并到主干</b>
+      <p>只有 C2 能合。合并前必须确认：检查全绿、改动说清楚了。</p>
+      <span class="who">C2</span>
+    </div>
+    <div class="arrow">→</div>
+
+    <div class="step">
+      <div class="n">4</div>
+      <b>重新上线</b>
+      <p>把整个文件夹重新上传一次，拿到同一个网址的新版本。</p>
+      <span class="who">C2</span>
+    </div>
+    <div class="arrow">→</div>
+
+    <div class="step s-gate">
+      <div class="n">5</div>
+      <b>上线检查</b>
+      <p>七个地址都要能打开；手机点一遍：能算、图能看、卡片能下载。</p>
+      <span class="who">C2</span>
+    </div>
+    <div class="arrow">→</div>
+
+    <div class="step">
+      <div class="n">6</div>
+      <b>记一版</b>
+      <p>记版本号、留上一版压缩包、更新二维码；这一版才算完成。</p>
+      <span class="who">C2</span>
+    </div>
+  </div>
+
+  <div class="rollback">
+    <b>⚠ 任何一步不过</b>
+    <span>立刻退回上一版（5 分钟内），把问题记在现场，不许“先上线再说”。　这一步的责任人同样是 C2。</span>
+  </div>
+
+  <div class="parallel">
+    <div class="pbox">
+      <b>① 测试证据往哪走</b>
+      <p>自动检查的截图 + 手工用例记录 → 汇总进《测试报告》。<br>不写“测试通过”，要写“测了什么、发现什么、怎么改的”。</p>
+      <p class="who">D2 负责收集与落笔</p>
+    </div>
+    <div class="pbox">
+      <b>② 数据往哪走</b>
+      <p>因子台账 → 直接成为设计文档的“算法大表”；<br>建议规则表 → 成为“减排建议”那一节的依据。</p>
+      <p class="who">B1 / B2 提供 · D1 引用</p>
+    </div>
+    <div class="pbox">
+      <b>③ 材料往哪走</b>
+      <p>各组交截图与素材 → D1 写文档、D3 做视频和 PPT →<br>组长统一术语与口径，打成提交包。</p>
+      <p class="who">D1 / D3 制作 · 组长统稿</p>
+    </div>
+  </div>
+
+  <div class="blockers">
+    <b>最容易卡住的三个地方（提前知道能省一天）</b>
+    <div class="bl">
+      <span>① 改了系数没同步页面上的系数表</span>
+      <em>自动检查会红，B1 顺手改掉</em>
+    </div>
+    <div class="bl">
+      <span>② 只上传了 index.html</span>
+      <em>样式和脚本都在 assets 里，必须整个文件夹一起传</em>
+    </div>
+    <div class="bl">
+      <span>③ 文档里的数字和程序对不上</span>
+      <em>统稿时才发现就晚了，D1 引用台账、别自己抄</em>
+    </div>
+  </div>
+
+  <div class="legend plain-legend" style="margin-top:5mm">
+    <i class="note-only">三个绿色框是“闸门”：过不去就不能往下走</i>
+    <i class="note-only" style="margin-left:auto">出问题先看《任务详解》第 4.2 节的三个必踩坑</i>
+  </div>
+
+  <div class="foot">
+    <span>碳足迹计算器 · 进程与分工</span>
+    <span>第 2 页</span>
+  </div>
+</div>
+
+</body>
+</html>
