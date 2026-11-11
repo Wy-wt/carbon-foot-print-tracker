@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>自动检查 · 碳足迹计算器（单文件版）</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f6faf8; color: #0f172a;
+    padding: 32px 20px 60px;
+    line-height: 1.55;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; }
+
+  header { margin-bottom: 22px; }
+  h1 { font-size: 26px; letter-spacing: -.02em; color: #064e3b; }
+  .sub { color: #64748b; font-size: 13px; margin-top: 6px; }
+
+  .panel {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 16px;
+    padding: 22px 24px; margin-bottom: 16px;
+    box-shadow: 0 12px 30px -24px rgba(6,78,59,.6);
+  }
+
+  /* 状态区 */
+  .status { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+  .badge {
+    display: grid; place-items: center;
+    width: 84px; height: 84px; border-radius: 24px;
+    font-size: 40px; color: #fff; flex: none;
+    background: #94a3b8;
+  }
+  .badge.ok { background: linear-gradient(145deg, #10b981, #047857); }
+  .badge.bad { background: linear-gradient(145deg, #f87171, #dc2626); }
+  .badge.run { background: linear-gradient(145deg, #fbbf24, #d97706); font-size: 26px; }
+
+  .stat-num { font-size: 34px; font-weight: 800; letter-spacing: -.03em; }
+  .stat-num b { color: #059669; }
+  .stat-num i { font-style: normal; color: #dc2626; }
+  .stat-label { font-size: 13px; color: #64748b; margin-top: 2px; }
+  .stamp { font-size: 12px; color: #94a3b8; margin-left: auto; text-align: right; }
+
+  /* 分组 */
+  .group { margin-bottom: 14px; }
+  .group h2 {
+    font-size: 13px; font-weight: 700; color: #047857;
+    padding-bottom: 6px; border-bottom: 1px solid #eef2f0; margin-bottom: 8px;
+  }
+  .item {
+    display: grid; grid-template-columns: 22px 1fr; gap: 8px;
+    align-items: start; padding: 4px 0; font-size: 13.5px;
+  }
+  .item .mark { color: #059669; font-weight: 700; }
+  .item.fail .mark { color: #dc2626; }
+  .item .why {
+    grid-column: 2; color: #b91c1c; font-size: 12px;
+    background: #fef2f2; border-left: 3px solid #fecaca;
+    padding: 4px 8px; border-radius: 0 6px 6px 0; margin-top: 3px;
+    font-family: Consolas, Menlo, monospace; white-space: pre-wrap;
+  }
+
+  .note {
+    background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px;
+    padding: 12px 14px; font-size: 12.5px; color: #92400e; margin-top: 4px;
+  }
+
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+  button {
+    font: inherit; font-size: 13px; font-weight: 600;
+    padding: 9px 18px; border-radius: 999px; cursor: pointer;
+    border: 1px solid #d1fae5; background: #ecfdf5; color: #047857;
+    transition: background .16s, transform .1s;
+  }
+  button:hover { background: #d1fae5; }
+  button:active { transform: translateY(1px); }
+  button.primary { background: #059669; border-color: #059669; color: #fff; }
+  button.primary:hover { background: #047857; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 26px; transform: translate(-50%, 20px);
+    background: rgba(15,23,42,.92); color: #f8fafc; font-size: 13px;
+    padding: 9px 18px; border-radius: 999px; opacity: 0;
+    transition: opacity .22s, transform .22s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  footer { text-align: center; color: #94a3b8; font-size: 12px; margin-top: 22px; }
+
+  @media print {
+    body { background: #fff; padding: 0; }
+    .panel { box-shadow: none; }
+    .actions, footer { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>自动检查 · 碳足迹计算器</h1>
+    <div class="sub">双击这一页就会自动跑一遍，不用装任何东西。全绿就截图贴进测试报告。</div>
+  </header>
+
+  <div class="panel">
+    <div class="status">
+      <div class="badge run" id="badge">…</div>
+      <div>
+        <div class="stat-num" id="statNum">检查中</div>
+        <div class="stat-label" id="statLabel">正在跑 24 项检查</div>
+      </div>
+      <div class="stamp" id="stamp"></div>
+    </div>
+    <div class="note" style="margin-top:16px">
+      单文件版：把这个文件发给任何人，双击就能跑。这一页跑的是 <b>24 项</b>计算与规则检查。另有 <b>3 项文件检查</b>（资源是否齐全、有没有写死路径、页面系数与代码是否一致）
+      需要读取文件，只能在命令行版里跑：<br>
+      <code>node tests/run.js</code> → 共 27 项。两个版本用的是同一份测试，不会出现结果不一致。
+    </div>
+  </div>
+
+  <div id="out"></div>
+
+  <div class="panel actions">
+    <button class="primary" id="btnRun">重新跑一遍</button>
+    <button id="btnCopy">复制结果（贴进报告用）</button>
+    <button id="btnPrint">打印本页</button>
+  </div>
+
+  <footer>碳足迹计算器 · tests/runner.html · 与 tests/run.js 共用同一份测试</footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   factors.js · 排放系数与基准数据
+   ---------------------------------------------------------
+   全部采用「排放因子法」：总排放 = Σ(活动量 × 排放系数)
+   数据来源为公开研究/官方统计的常用取值，课堂上按"示意系数"使用。
+   修改这里的数字即可调整整个模型，计算逻辑不用动。
+   ========================================================= */
+window.CF = window.CF || {};
+
+(function (CF) {
+  'use strict';
+
+  /* ---------------- 出行：kg CO₂e / km ---------------- */
+  CF.FACTORS = {
+    transport: {
+      walk:  { key: 'walk',  label: '步行 / 骑行', icon: '🚶', factor: 0.000, note: '不计入直接排放' },
+      ebike: { key: 'ebike', label: '电动自行车',  icon: '🛵', factor: 0.007, note: '百公里电耗约 1.2 kWh' },
+      metro: { key: 'metro', label: '地铁',        icon: '🚇', factor: 0.032, note: '城市轨道客运平均' },
+      bus:   { key: 'bus',   label: '公交',        icon: '🚌', factor: 0.045, note: '城市公交客运平均' },
+      taxi:  { key: 'taxi',  label: '打车 / 网约车', icon: '🚕', factor: 0.160, note: '含空驶与调度' },
+      car:   { key: 'car',   label: '燃油私家车',  icon: '🚗', factor: 0.200, note: '百公里油耗约 7 L' },
+      ev:    { key: 'ev',    label: '新能源私家车', icon: '🔌', factor: 0.100, note: '百公里电耗 17 kWh' }
+    }
+  };
+
+  /* ---------------- 用电 ---------------- */
+  // 全国电网平均 CO₂ 排放因子（kg CO₂e / kWh）
+  CF.ELEC_FACTOR = 0.5703;
+
+  // 按人数估算：人均每月用电量（度），人越多，人均公共用电越省
+  CF.ELEC_ESTIMATE = { 1: 120, 2: 100, 3: 92, 4: 82, 5: 74, 6: 68 };
+
+  /* ---------------- 饮食 ---------------- */
+  CF.DIET = {
+    // 一次红肉按 150 g 计；混合红肉系数 13.3 kg CO₂e/kg
+    // （牛肉 27、猪肉 6、羊肉 20，按国人消费结构加权）
+    perMealKg: 0.15,
+    redMeatFactor: 13.3,
+    // 每次外卖：餐盒 + 包装 + 配送 + 额外食物浪费
+    takeoutPerMeal: 0.45,
+    // 基础饮食（主食、蔬菜、蛋奶等）年排放，kg
+    base: { plant: 560, balanced: 700, meat: 950 },
+    baseLabel: {
+      plant: '以植物为主',
+      balanced: '荤素均衡',
+      meat: '以肉为主'
+    }
+  };
+
+  // 一次红肉的排放 = 150 g × 13.3 = 2.0 kg（四舍五入后写入系数表）
+  CF.DIET.redMeatPerServing = CF.DIET.perMealKg * CF.DIET.redMeatFactor; // ≈ 1.995
+
+  /* ---------------- 消费：kg CO₂e / 元 ---------------- */
+  CF.CONSUME = {
+    clothing: 0.06,      // 衣物（纺织服装，含生产与运输）
+    electronics: 0.04    // 电子产品（含生产制造）
+  };
+
+  /* ---------------- 三条基准线：kg CO₂e / 人 / 年 ---------------- */
+  CF.BENCHMARKS = [
+    {
+      key: 'national',
+      label: '全国人均',
+      value: 8000,
+      color: '#f59e0b',
+      desc: '中国能源相关 CO₂ 人均排放约 8 吨 / 年'
+    },
+    {
+      key: 'global',
+      label: '全球人均',
+      value: 4700,
+      color: '#0ea5e9',
+      desc: '全球平均约 4.7 吨 / 年'
+    },
+    {
+      key: 'paris',
+      label: '巴黎协定目标',
+      value: 2000,
+      color: '#16a34a',
+      desc: '1.5℃ 情景下 2050 年人均需 ≤ 2 吨'
+    }
+  ];
+
+  /* ---------------- 等级勋章 ---------------- */
+  CF.GRADES = [
+    { grade: 'A+', max: 2000,  title: '气候先锋',   color: '#059669', desc: '已经达到巴黎协定的人均目标线' },
+    { grade: 'A',  max: 3500,  title: '低碳生活家', color: '#10b981', desc: '明显低于全球人均水平' },
+    { grade: 'B',  max: 5000,  title: '中等排放',   color: '#3b82f6', desc: '接近全球人均，还有下降空间' },
+    { grade: 'C',  max: 8000,  title: '偏高排放',   color: '#f59e0b', desc: '高于全球人均，接近国内人均' },
+    { grade: 'D',  max: Infinity, title: '高排放',  color: '#dc2626', desc: '已超过全国人均水平' }
+  ];
+
+  /* ---------------- 四大类别的颜色 ---------------- */
+  CF.CATEGORY = [
+    { key: 'transport', label: '出行',   icon: '🚇', color: '#0ea5e9' },
+    { key: 'elec',      label: '用电',   icon: '💡', color: '#f59e0b' },
+    { key: 'food',      label: '饮食',   icon: '🍚', color: '#16a34a' },
+    { key: 'consume',   label: '消费',   icon: '🛍️', color: '#a855f7' }
+  ];
+
+  /* ---------------- 小工具 ---------------- */
+  // 一棵成年树一年大约吸收 20 kg CO₂
+  CF.TREE_KG_PER_YEAR = 20;
+
+  CF.fmt = function (n, digits) {
+    var d = typeof digits === 'number' ? digits : 0;
+    var v = Number(n);
+    if (!isFinite(v)) v = 0;
+    var s = v.toFixed(d);
+    var parts = s.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return parts.join('.');
+  };
+
+  // kg → 吨，保留两位
+  CF.toTons = function (kg) {
+    return (Number(kg) || 0) / 1000;
+  };
+
+  CF.tonsText = function (kg, digits) {
+    return CF.toTons(kg).toFixed(typeof digits === 'number' ? digits : 2);
+  };
+
+})(window.CF);
+
+</script>
+<script>
+/* =========================================================
+   engine.js · 计算引擎
+   ---------------------------------------------------------
+   输入 → 归一化 → 按排放系数换算 → 分项汇总 → 总量 + 等级
+   所有口径都写在这里，页面只负责展示。
+   ========================================================= */
+window.CF = window.CF || {};
+
+(function (CF) {
+  'use strict';
+
+  var WEEKS_PER_YEAR = 52;
+  var MONTHS_PER_YEAR = 12;
+
+  function clamp(n, min, max) {
+    n = Number(n);
+    if (!isFinite(n)) n = min;
+    return Math.min(max, Math.max(min, n));
+  }
+
+  /* 按人数估算家庭月用电量（返回家庭总量与人均值） */
+  CF.estimateElec = function (people) {
+    var p = clamp(Math.round(people || 1), 1, 6);
+    var per = CF.ELEC_ESTIMATE[p] || 80;
+    return { people: p, perPerson: per, total: per * p };
+  };
+
+  /* 输入归一化：任何脏数据都在这里被夹到合法区间 */
+  CF.normalizeInput = function (raw) {
+    raw = raw || {};
+    var people = clamp(Math.round(raw.household || 1), 1, 6);
+    var elecMode = raw.elecMode === 'estimate' ? 'estimate' : 'direct';
+    var monthlyKwh = elecMode === 'estimate'
+      ? CF.estimateElec(people).total
+      : clamp(raw.monthlyKwh, 0, 2000);
+
+    var modeKey = raw.transportMode;
+    if (!CF.FACTORS.transport[modeKey]) modeKey = 'metro';
+
+    var dietKey = raw.dietType;
+    if (!CF.DIET.base[dietKey]) dietKey = 'balanced';
+
+    return {
+      transportMode: modeKey,
+      commuteKm: clamp(raw.commuteKm, 0, 1000),
+      otherKm: clamp(raw.otherKm, 0, 1000),
+      commuteFactor: typeof raw.commuteFactor === 'number' ? clamp(raw.commuteFactor, 0, 1) : null,
+      otherFactor: typeof raw.otherFactor === 'number' ? clamp(raw.otherFactor, 0, 1) : null,
+      elecMode: elecMode,
+      monthlyKwh: monthlyKwh,
+      household: people,
+      redMeat: clamp(Math.round(raw.redMeat), 0, 21),
+      takeout: clamp(Math.round(raw.takeout), 0, 35),
+      dietType: dietKey,
+      clothing: clamp(raw.clothing, 0, 200000),
+      electronics: clamp(raw.electronics, 0, 200000)
+    };
+  };
+
+  /* 等级：按年度总量（kg）划线 */
+  CF.gradeOf = function (totalKg) {
+    for (var i = 0; i < CF.GRADES.length; i++) {
+      if (totalKg <= CF.GRADES[i].max) return CF.GRADES[i];
+    }
+    return CF.GRADES[CF.GRADES.length - 1];
+  };
+
+  /* 主计算 */
+  CF.compute = function (raw) {
+    var input = CF.normalizeInput(raw);
+    var mode = CF.FACTORS.transport[input.transportMode];
+    var factor = input.commuteFactor === null ? mode.factor : input.commuteFactor;
+    var otherFactor = input.otherFactor === null ? mode.factor : input.otherFactor;
+
+    /* --- 出行 --- */
+    var commuteKmYear = input.commuteKm * WEEKS_PER_YEAR;
+    var otherKmYear = input.otherKm * WEEKS_PER_YEAR;
+    var commute = commuteKmYear * factor;
+    var other = otherKmYear * otherFactor;
+
+    /* --- 用电（家庭总量按人数平摊）--- */
+    var elecKwhYear = input.monthlyKwh * MONTHS_PER_YEAR / input.household;
+    var elec = elecKwhYear * CF.ELEC_FACTOR;
+
+    /* --- 饮食 --- */
+    var foodBase = CF.DIET.base[input.dietType];
+    var redMeatKg = input.redMeat * WEEKS_PER_YEAR * CF.DIET.redMeatPerServing;
+    var takeoutKg = input.takeout * WEEKS_PER_YEAR * CF.DIET.takeoutPerMeal;
+
+    /* --- 消费 --- */
+    var clothingKg = input.clothing * CF.CONSUME.clothing;
+    var electronicsKg = input.electronics * CF.CONSUME.electronics;
+
+    var transport = commute + other;
+    var food = foodBase + redMeatKg + takeoutKg;
+    var consume = clothingKg + electronicsKg;
+    var total = transport + elec + food + consume;
+
+    var items = [
+      { key: 'transport', label: '出行', icon: '🚇', color: '#0ea5e9', kg: transport },
+      { key: 'elec',      label: '用电', icon: '💡', color: '#f59e0b', kg: elec },
+      { key: 'food',      label: '饮食', icon: '🍚', color: '#16a34a', kg: food },
+      { key: 'consume',   label: '消费', icon: '🛍️', color: '#a855f7', kg: consume }
+    ];
+
+    items.forEach(function (it) {
+      it.share = total > 0 ? it.kg / total : 0;
+    });
+
+    var rows = [
+      { label: '通勤（' + mode.label + '）', amount: CF.fmt(commuteKmYear) + ' km/年', kg: commute, color: '#0ea5e9' },
+      { label: '其他出行', amount: CF.fmt(otherKmYear) + ' km/年', kg: other, color: '#38bdf8' },
+      { label: '家庭用电（人均）', amount: CF.fmt(elecKwhYear) + ' kWh/年', kg: elec, color: '#f59e0b' },
+      { label: '红肉', amount: CF.fmt(input.redMeat * WEEKS_PER_YEAR) + ' 次/年', kg: redMeatKg, color: '#16a34a' },
+      { label: '日常饮食（' + CF.DIET.baseLabel[input.dietType] + '）', amount: '按饮食结构估算', kg: foodBase, color: '#4ade80' },
+      { label: '外卖', amount: CF.fmt(input.takeout * WEEKS_PER_YEAR) + ' 次/年', kg: takeoutKg, color: '#a3e635' },
+      { label: '衣物', amount: CF.fmt(input.clothing) + ' 元/年', kg: clothingKg, color: '#a855f7' },
+      { label: '电子产品', amount: CF.fmt(input.electronics) + ' 元/年', kg: electronicsKg, color: '#c084fc' }
+    ].filter(function (r) { return r.kg > 0.5; });
+
+    var grade = CF.gradeOf(total);
+
+    return {
+      input: input,
+      factor: factor,
+      mode: mode,
+      transport: transport,
+      commute: commute,
+      other: other,
+      elec: elec,
+      elecKwhYear: elecKwhYear,
+      food: food,
+      foodBase: foodBase,
+      redMeatKg: redMeatKg,
+      takeoutKg: takeoutKg,
+      consume: consume,
+      clothingKg: clothingKg,
+      electronicsKg: electronicsKg,
+      total: total,
+      items: items,
+      rows: rows,
+      grade: grade
+    };
+  };
+
+  /* 把结果压成可存进 localStorage 的轻量结构 */
+  CF.snapshot = function (result) {
+    var b = {};
+    result.items.forEach(function (it) { b[it.key] = Math.round(it.kg); });
+    return {
+      ts: Date.now(),
+      total: Math.round(result.total),
+      grade: result.grade.grade,
+      breakdown: b,
+      input: result.input
+    };
+  };
+
+
+  CF.suggestions = function (r) {
+    /* 减排建议：纯函数，只依赖计算结果，方便单元测试 */
+  var inp = r.input;
+    var list = [];
+    var commuteKmYear = inp.commuteKm * WEEKS_PER_YEAR;
+    var modeFactor = r.factor;
+
+    /* 1. 通勤方式 */
+    if (commuteKmYear > 0 && modeFactor > 0.05) {
+      var target = Math.min(modeFactor, CF.FACTORS.transport.metro.factor);
+      var save = commuteKmYear * 0.4 * (modeFactor - target);
+      if (save > 5) {
+        list.push({
+          cat: '出行',
+          title: '每周挑 2 天改乘地铁 / 公交通勤',
+          desc: '你现在主要靠' + r.mode.label + '，每周通勤 ' + CF.fmt(inp.commuteKm) + ' km；把其中 2/5 换成公共交通，顺便避开通勤高峰。',
+          kg: save
+        });
+      }
+    }
+
+    /* 2. 红肉 */
+    if (inp.redMeat >= 3) {
+      var cutMeat = Math.min(2, inp.redMeat);
+      list.push({
+        cat: '饮食',
+        title: '每周少吃 ' + cutMeat + ' 次红肉',
+        desc: '一年 ' + CF.fmt(inp.redMeat * WEEKS_PER_YEAR) + ' 次红肉，减到 ' + CF.fmt((inp.redMeat - cutMeat) * WEEKS_PER_YEAR) +
+          ' 次；用鸡胸、鱼、豆制品替代，蛋白质并不会少。',
+        kg: cutMeat * WEEKS_PER_YEAR * CF.DIET.redMeatPerServing
+      });
+    }
+
+    /* 3. 外卖 */
+    if (inp.takeout >= 4) {
+      var cutTakeout = Math.max(1, Math.round(inp.takeout / 2));
+      list.push({
+        cat: '饮食',
+        title: '每周少点 ' + cutTakeout + ' 次外卖',
+        desc: '自带饭盒或去食堂，省下的不只是钱，还有一次性餐盒和配送里程。',
+        kg: cutTakeout * WEEKS_PER_YEAR * CF.DIET.takeoutPerMeal
+      });
+    }
+
+    /* 4. 用电 */
+    if (r.elec > 120) {
+      list.push({
+        cat: '用电',
+        title: '把家庭月用电降一成',
+        desc: '空调调高 1℃、换 LED 灯、拔掉待机插头。按每月 ' + CF.fmt(inp.monthlyKwh) +
+          ' 度算，省下约 ' + CF.fmt(inp.monthlyKwh * 0.1) + ' 度。',
+        kg: r.elec * 0.1
+      });
+    }
+
+    /* 5. 饮食结构 */
+    if (inp.dietType !== 'plant') {
+      var gap = r.foodBase - CF.DIET.base.plant;
+      if (gap > 0) {
+        list.push({
+          cat: '饮食',
+          title: '把饮食结构往植物性倾斜',
+          desc: '你目前是「' + CF.DIET.baseLabel[inp.dietType] + '」。每周用 2~3 餐豆制品、全谷物替代肉类，就是最省钱的一档减排。',
+          kg: gap * 0.6
+        });
+      }
+    }
+
+    /* 6. 衣物 */
+    if (inp.clothing >= 3000) {
+      list.push({
+        cat: '消费',
+        title: '衣物少买三成',
+        desc: '先穿现有的，二手循环也算；一件耐穿的基础款胜过三件快时尚。',
+        kg: r.clothingKg * 0.3
+      });
+    }
+
+    /* 7. 电子产品 */
+    if (inp.electronics >= 4000) {
+      list.push({
+        cat: '消费',
+        title: '手机 / 电脑多用一年',
+        desc: '把换机周期从 2 年拉到 3 年，制造环节的排放直接被摊薄三分之一。',
+        kg: r.electronicsKg * 0.33
+      });
+    }
+
+    /* 8. 兜底：数据都很低时也给几条 */
+    var fallback = [
+      { cat: '出行', title: '3 公里内步行或骑车', desc: '每周 3 次短途不坐车，一年就是 150 多公里。', kg: 3 * 3 * WEEKS_PER_YEAR * CF.FACTORS.transport.car.factor },
+      { cat: '用电', title: '随手关灯、拔掉待机插头', desc: '待机功耗通常占家庭用电的 5%~10%。', kg: 60 },
+      { cat: '饮食', title: '按需点餐、剩菜打包', desc: '食物浪费的排放常常被忽略。', kg: 40 }
+    ];
+    // 兜底建议也要守规矩：分项本身的排放都不够减，就不该给出这条
+    var catTotal = { '出行': r.transport, '用电': r.elec, '饮食': r.food, '消费': r.consume };
+    fallback.forEach(function (f) {
+      if (list.length >= 3) return;
+      if ((catTotal[f.cat] || 0) <= f.kg) return;
+      list.push(f);
+    });
+
+    list.sort(function (a, b) { return b.kg - a.kg; });
+    var picked = list.slice(0, 5);
+
+    // 只给「排放占比最大的那一类」打一个「重点」标记，避免满屏都是重点
+    picked.forEach(function (it) { it.hot = false; });
+    var dominant = r.items.slice().sort(function (a, b) { return b.kg - a.kg; })[0];
+    if (dominant) {
+      for (var i = 0; i < picked.length; i++) {
+        if (picked[i].cat === dominant.label) { picked[i].hot = true; break; }
+      }
+    }
+
+    return picked;
+  };
+
+})(window.CF);
+
+</script>
+<script>
+/* =========================================================
+   tests/cases.js · 24 项检查（不需要读文件的那部分）
+   ---------------------------------------------------------
+   同一份测试，两个地方用：
+     1. tests/run.js      命令行：node tests/run.js（24 + 3 项文件检查 = 27 项）
+     2. tests/runner.html 网页版：双击打开就能看结果（24 项）
+   测试只写一遍，两边共用，不会出现“网页版和命令行版结果不一样”。
+   ========================================================= */
+(function (root) {
+  'use strict';
+
+  var groups = [];
+  var current = null;
+
+  function group(title) {
+    current = { title: title, tests: [] };
+    groups.push(current);
+  }
+
+  function test(name, fn) {
+    current.tests.push({ name: name, fn: fn });
+  }
+
+  function ok(cond, msg) {
+    if (!cond) throw new Error(msg || '断言失败');
+  }
+
+  function near(actual, expected, tolerance, msg) {
+    var t = tolerance == null ? 1e-6 : tolerance;
+    if (Math.abs(actual - expected) > t) {
+      throw new Error((msg ? msg + '：' : '') + '期望 ' + expected + '，实际 ' + actual.toFixed(3));
+    }
+  }
+
+function baseInput(overrides) {
+  return Object.assign({
+    transportMode: 'metro',
+    commuteKm: 40,
+    otherKm: 20,
+    elecMode: 'direct',
+    monthlyKwh: 240,
+    household: 3,
+    redMeat: 4,
+    takeout: 3,
+    dietType: 'balanced',
+    clothing: 3000,
+    electronics: 2000
+  }, overrides || {});
+}
+
+group('一、系数表体检');
+
+test('电网因子是正数', function () {
+  ok(CF.ELEC_FACTOR > 0, 'ELEC_FACTOR 应大于 0');
+});
+
+test('每种出行方式的系数都在 0~1 之间', function () {
+  Object.keys(CF.FACTORS.transport).forEach(function (k) {
+    const f = CF.FACTORS.transport[k].factor;
+    ok(f >= 0 && f <= 1, k + ' 的系数 ' + f + ' 超出合理范围');
+  });
+});
+
+test('三条基准线正好是全国 8.0 / 全球 4.7 / 巴黎 2.0 吨', function () {
+  const map = {};
+  CF.BENCHMARKS.forEach(function (b) { map[b.key] = b.value; });
+  near(map.national, 8000);
+  near(map.global, 4700);
+  near(map.paris, 2000);
+});
+
+test('等级阈值严格递增，且最后一档不封顶', function () {
+  for (let i = 1; i < CF.GRADES.length; i++) {
+    ok(CF.GRADES[i].max > CF.GRADES[i - 1].max, '第 ' + i + ' 档阈值没有递增');
+  }
+  ok(CF.GRADES[CF.GRADES.length - 1].max === Infinity, '最后一档应为 Infinity');
+});
+
+test('红肉单次排放 = 150g × 13.3', function () {
+  near(CF.DIET.redMeatPerServing, CF.DIET.perMealKg * CF.DIET.redMeatFactor);
+});
+
+/* =========================================================
+   二、计算引擎：手算对照
+   ========================================================= */
+group('二、计算引擎（手算对照）');
+
+test('标准输入：总量 = 手算 2092.49 kg', function () {
+  // 出行 40*52*0.032 + 20*52*0.032 = 66.56 + 33.28
+  // 用电 240*12/3*0.5703          = 547.49
+  // 饮食 700 + 4*52*1.995 + 3*52*0.45 = 700 + 414.96 + 70.2
+  // 消费 3000*0.06 + 2000*0.04    = 180 + 80
+  const r = CF.compute(baseInput());
+  near(r.commute, 66.56, 0.01);
+  near(r.other, 33.28, 0.01);
+  near(r.elec, 547.488, 0.01);
+  near(r.foodBase, 700);
+  near(r.redMeatKg, 414.96, 0.01);
+  near(r.takeoutKg, 70.2, 0.01);
+  near(r.consume, 260, 0.01);
+  near(r.total, 2092.488, 0.01);
+});
+
+test('开车通勤族：总量 ≈ 4435 kg（与答辩材料里的用例一致）', function () {
+  const r = CF.compute(baseInput({
+    transportMode: 'car', commuteKm: 100, otherKm: 40,
+    monthlyKwh: 320, redMeat: 6, takeout: 5,
+    dietType: 'meat', clothing: 6000, electronics: 5000
+  }));
+  near(r.total, 4435.4, 0.5, '总量');
+});
+
+test('总量 = 四个分项之和', function () {
+  const r = CF.compute(baseInput({ transportMode: 'car', redMeat: 9, clothing: 12000 }));
+  near(r.total, r.transport + r.elec + r.food + r.consume, 1e-9);
+});
+
+test('分项占比之和 = 100%', function () {
+  const r = CF.compute(baseInput({ transportMode: 'car' }));
+  const sum = r.items.reduce(function (s, it) { return s + it.share; }, 0);
+  near(sum, 1, 1e-9);
+});
+
+test('家庭人口越多，人均用电越低', function () {
+  const one = CF.compute(baseInput({ household: 1 })).elec;
+  const four = CF.compute(baseInput({ household: 4 })).elec;
+  ok(four < one, '4 人户的人均用电应低于 1 人户');
+  near(one / four, 4, 1e-9, '倍数关系');
+});
+
+test('按人数估算模式：家庭总量 = 人均 × 人数', function () {
+  const est = CF.estimateElec(3);
+  near(est.total, est.perPerson * 3);
+  const r = CF.compute(baseInput({ elecMode: 'estimate', household: 3 }));
+  near(r.elecKwhYear, est.perPerson * 12, 1e-9);
+});
+
+test('步行通勤：出行分项为 0', function () {
+  const r = CF.compute(baseInput({ transportMode: 'walk', commuteKm: 100, otherKm: 100 }));
+  near(r.transport, 0);
+});
+
+/* =========================================================
+   三、输入健壮性（脏数据不许算出 NaN）
+   ========================================================= */
+group('三、输入健壮性');
+
+test('负数、NaN、空值都被夹到合法区间', function () {
+  [
+    { commuteKm: -50, monthlyKwh: -10, redMeat: -3, clothing: -1000 },
+    { commuteKm: NaN, monthlyKwh: undefined, redMeat: 'abc', takeout: null },
+    {},
+    { household: 0 },
+    { household: 99 }
+  ].forEach(function (bad, i) {
+    const r = CF.compute(baseInput(bad));
+    ok(isFinite(r.total) && r.total >= 0, '第 ' + (i + 1) + ' 组脏数据算出了非法值：' + r.total);
+    ok(r.input.household >= 1 && r.input.household <= 6, '家庭人口没被夹紧');
+  });
+});
+
+test('超大输入不会爆表（周里程 9999 仍有限）', function () {
+  const r = CF.compute(baseInput({ commuteKm: 9999, otherKm: 9999, monthlyKwh: 99999 }));
+  ok(isFinite(r.total) && r.total > 0, '结果应为有限正数');
+});
+
+test('未知的通勤方式不会崩，回落到默认值', function () {
+  const r = CF.compute(baseInput({ transportMode: 'ufo' }));
+  ok(r.input.transportMode === 'metro', '未知方式应回落到 metro');
+});
+
+/* =========================================================
+   四、等级划分边界
+   ========================================================= */
+group('四、等级边界');
+
+test('恰好 2000 kg 仍是 A+，2000.1 掉到 A', function () {
+  ok(CF.gradeOf(2000).grade === 'A+');
+  ok(CF.gradeOf(2000.1).grade === 'A');
+});
+
+test('3500 / 5000 / 8000 三个边界都落在上一档', function () {
+  ok(CF.gradeOf(3500).grade === 'A');
+  ok(CF.gradeOf(5000).grade === 'B');
+  ok(CF.gradeOf(8000).grade === 'C');
+  ok(CF.gradeOf(8000.1).grade === 'D');
+});
+
+test('0 排放是 A+', function () {
+  ok(CF.gradeOf(0).grade === 'A+');
+});
+
+/* =========================================================
+   五、减排建议：数量、口径、不越界
+   ========================================================= */
+group('五、减排建议');
+
+test('常规输入给满 5 条，且按减排量从大到小排', function () {
+  const r = CF.compute(baseInput({
+    transportMode: 'car', commuteKm: 100, otherKm: 40,
+    monthlyKwh: 320, redMeat: 6, takeout: 5,
+    dietType: 'meat', clothing: 6000, electronics: 5000
+  }));
+  const list = CF.suggestions(r);
+  ok(list.length === 5, '应有 5 条建议，实际 ' + list.length);
+  for (let i = 1; i < list.length; i++) {
+    ok(list[i].kg <= list[i - 1].kg, '第 ' + i + ' 条没有按降序排列');
+  }
+});
+
+test('每条建议的节省量都不超过它所属分项的排放', function () {
+  const inputs = [
+    baseInput({ transportMode: 'car', commuteKm: 100, redMeat: 6, takeout: 5, dietType: 'meat', clothing: 6000, electronics: 5000 }),
+    baseInput({ transportMode: 'walk', commuteKm: 0, otherKm: 0, redMeat: 0, takeout: 0, dietType: 'plant', clothing: 0, electronics: 0 }),
+    baseInput({ transportMode: 'bus', redMeat: 0, takeout: 0 }),
+    baseInput({ transportMode: 'ev', monthlyKwh: 30, household: 6 })
+  ];
+  inputs.forEach(function (input, idx) {
+    const r = CF.compute(input);
+    const catTotal = { '出行': r.transport, '用电': r.elec, '饮食': r.food, '消费': r.consume };
+    CF.suggestions(r).forEach(function (s) {
+      ok(catTotal[s.cat] !== undefined, '建议的类别「' + s.cat + '」不存在');
+      ok(s.kg <= catTotal[s.cat] + 0.001,
+        '第 ' + (idx + 1) + ' 组：「' + s.title + '」要减 ' + s.kg.toFixed(1) +
+        ' kg，但「' + s.cat + '」总共才 ' + catTotal[s.cat].toFixed(1) + ' kg');
+    });
+  });
+});
+
+test('所有建议加起来不超过总排放', function () {
+  const r = CF.compute(baseInput({ transportMode: 'car', commuteKm: 100, redMeat: 6, takeout: 5, dietType: 'meat' }));
+  const sum = CF.suggestions(r).reduce(function (s, it) { return s + it.kg; }, 0);
+  ok(sum <= r.total + 0.001, '建议合计 ' + sum.toFixed(1) + ' 超过了总排放 ' + r.total.toFixed(1));
+});
+
+test('「重点」标记最多只有一个', function () {
+  const r = CF.compute(baseInput({ transportMode: 'car', redMeat: 8, dietType: 'meat' }));
+  const hot = CF.suggestions(r).filter(function (s) { return s.hot; });
+  ok(hot.length <= 1, '出现了 ' + hot.length + ' 个重点标记');
+});
+
+test('零排放的极端输入不会崩，也不给"减负数"的建议', function () {
+  const r = CF.compute({ transportMode: 'walk', commuteKm: 0, otherKm: 0, monthlyKwh: 0, household: 1, redMeat: 0, takeout: 0, dietType: 'plant', clothing: 0, electronics: 0 });
+  const list = CF.suggestions(r);
+  ok(Array.isArray(list), '应返回数组');
+  list.forEach(function (s) { ok(s.kg > 0, '不该出现 0 或负数的减排量'); });
+});
+
+/* =========================================================
+   六、模拟器不变量
+   ========================================================= */
+group('六、模拟器不变量');
+
+test('把通勤系数降到地铁水平，总量必然下降', function () {
+  const base = CF.compute(baseInput({ transportMode: 'car', commuteKm: 100 }));
+  const sim = CF.compute(Object.assign({}, baseInput({ transportMode: 'car', commuteKm: 100 }), {
+    commuteFactor: CF.FACTORS.transport.metro.factor
+  }));
+  ok(sim.total < base.total, '模拟后应低于原始值');
+  // 只改通勤（100 km/周），其他出行（20 km/周）不受影响
+  near(base.total - sim.total, 100 * 52 * (0.2 - 0.032), 0.01, '减排量');
+});
+
+/* =========================================================
+   七、静态产物自查（部署前跑一遍）
+   ========================================================= */
+
+  root.CF_CASES = { groups: groups };
+})(typeof window !== 'undefined' ? window : this);
+
+</script>
+<script>
+(function () {
+  'use strict';
+
+  var outEl = document.getElementById('out');
+  var badgeEl = document.getElementById('badge');
+  var numEl = document.getElementById('statNum');
+  var labelEl = document.getElementById('statLabel');
+  var stampEl = document.getElementById('stamp');
+  var toastEl = document.getElementById('toast');
+  var lastReport = '';
+
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    setTimeout(function () { toastEl.classList.remove('show'); }, 2000);
+  }
+
+  function pad(n) { return ('0' + n).slice(-2); }
+
+  function nowText() {
+    var d = new Date();
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) +
+      ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+
+  function esc(s) {
+    return String(s).replace(/[&<>]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c];
+    });
+  }
+
+  function fail(msg) {
+    badgeEl.className = 'badge bad';
+    badgeEl.textContent = '!';
+    numEl.innerHTML = '<i>无法运行</i>';
+    labelEl.textContent = '请检查文件是否齐全';
+    outEl.innerHTML = '<div class="panel"><div class="note">' + esc(msg) + '</div></div>';
+  }
+
+  function run() {
+    if (!window.CF || !window.CF.compute) {
+      fail('找不到计算代码：请把 tests 文件夹和 assets 文件夹放在同一个项目里，' +
+           '并且直接从项目文件夹打开 tests/runner.html。');
+      return;
+    }
+    if (!window.CF_CASES) {
+      fail('这个文件被改坏了或没下载完整，请重新从群里下载一次。');
+      return;
+    }
+
+    var groups = window.CF_CASES.groups;
+    var passed = 0;
+    var failed = [];
+    var html = '';
+    var report = [];
+
+    groups.forEach(function (g) {
+      html += '<div class="panel group"><h2>' + esc(g.title) + '</h2>';
+      report.push(g.title);
+
+      g.tests.forEach(function (t) {
+        try {
+          t.fn();
+          passed++;
+          html += '<div class="item"><span class="mark">✓</span><span>' + esc(t.name) + '</span></div>';
+          report.push('  ✓ ' + t.name);
+        } catch (err) {
+          failed.push({ name: t.name, message: err.message });
+          html += '<div class="item fail"><span class="mark">✗</span><span>' + esc(t.name) + '</span>' +
+            '<span class="why">' + esc(err.message) + '</span></div>';
+          report.push('  ✗ ' + t.name + '  ——  ' + err.message);
+        }
+      });
+
+      html += '</div>';
+      report.push('');
+    });
+
+    outEl.innerHTML = html;
+
+    var total = passed + failed.length;
+    if (failed.length === 0) {
+      badgeEl.className = 'badge ok';
+      badgeEl.textContent = '✓';
+      numEl.innerHTML = '全部通过：<b>' + passed + '</b> 项';
+      labelEl.textContent = '可以截图贴进测试报告';
+    } else {
+      badgeEl.className = 'badge bad';
+      badgeEl.textContent = '✗';
+      numEl.innerHTML = '通过 <b>' + passed + '</b> 项，失败 <i>' + failed.length + '</i> 项';
+      labelEl.textContent = '把红色那几条截图发给 B1';
+    }
+    stampEl.textContent = '检查时间\n' + nowText() + '\n共 ' + total + ' 项';
+    stampEl.style.whiteSpace = 'pre-line';
+
+    lastReport = '自动检查结果\n时间：' + nowText() +
+      '\n通过：' + passed + ' 项，失败：' + failed.length + ' 项' +
+      '（另有 3 项文件检查只在命令行版执行）\n\n' + report.join('\n');
+  }
+
+  document.getElementById('btnRun').addEventListener('click', function () {
+    badgeEl.className = 'badge run';
+    badgeEl.textContent = '…';
+    numEl.textContent = '检查中';
+    setTimeout(run, 30);
+    toast('已重新跑一遍');
+  });
+
+  document.getElementById('btnCopy').addEventListener('click', function () {
+    if (!lastReport) { toast('还没有结果'); return; }
+    function done() { toast('已复制，可以贴进报告'); }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(lastReport).then(done).catch(fallback);
+    } else {
+      fallback();
+    }
+    function fallback() {
+      var ta = document.createElement('textarea');
+      ta.value = lastReport;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); done(); } catch (e) { toast('复制失败，请手动选中文字'); }
+      document.body.removeChild(ta);
+    }
+  });
+
+  document.getElementById('btnPrint').addEventListener('click', function () {
+    window.print();
+  });
+
+  window.addEventListener('load', function () {
+    setTimeout(run, 60);
+  });
+})();
+</script>
+</body>
+</html>
