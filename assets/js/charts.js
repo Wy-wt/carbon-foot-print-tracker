@@ -217,7 +217,7 @@ window.CF = window.CF || {};
 
     /* --- 兜底：HTML 条形图 --- */
     var html = '';
-    rows.forEach(function (r) {
+    rows.slice().reverse().forEach(function (r) {
       var pct = axisMax > 0 ? Math.max(2, (r.kg / axisMax) * 100) : 2;
       html += '<div class="fb-bar-row">' +
         '<span class="fb-bar-label"' + (r.you ? ' style="font-weight:800;color:#059669"' : '') + '>' + r.label + '</span>' +
@@ -288,10 +288,10 @@ window.CF = window.CF || {};
     var n = values.length;
     var min = Math.min.apply(null, values);
     var max = Math.max.apply(null, values);
-    var span = Math.max(max - min, 0.5);
+    var span = Math.max(max * 1.1, 1);
     var pts = values.map(function (v, i) {
       var x = n === 1 ? W / 2 : pad + (i * (W - pad * 2)) / (n - 1);
-      var y = H - pad - ((v - min) / span) * (H - pad * 2);
+      var y = H - pad - (v / span) * (H - pad * 2);
       return [x, y];
     });
     var d = pts.map(function (p, i) { return (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' ');
